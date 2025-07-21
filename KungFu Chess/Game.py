@@ -6,6 +6,9 @@ from Command import Command
 from Piece   import Piece
 from img     import Img
 
+# NEW ───────────────────────────────────────────────────────────────────────
+from KeyboardInput import KeyboardProcessor, KeyboardProducer
+
 
 class InvalidBoard(Exception): ...
 # ────────────────────────────────────────────────────────────────────
@@ -22,6 +25,10 @@ class Game:
         # fast lookup tables ---------------------------------------------------
         self.pos            : Dict[Tuple[int, int], Piece] = {}
         self.piece_by_id    : Dict[str, Piece] = {p.id: p for p in pieces}
+
+        # keyboard helpers ---------------------------------------------------
+        self.keyboard_processor: Optional[KeyboardProcessor] = None
+        self.keyboard_producer : Optional[KeyboardProducer]  = None
 
     # ─── helpers ─────────────────────────────────────────────────────────────
     def game_time_ms(self) -> int:
@@ -63,9 +70,17 @@ class Game:
             self.selected_id = None
 
     def start_user_input_thread(self):
-        # OpenCV’s mouse callbacks run in the main thread, so we just register it
+        # The window still needs to be created in the main thread so OpenCV can
+        # render frames. All keyboard handling happens in a background thread.
         cv2.namedWindow("Kung-Fu Chess")
-        cv2.setMouseCallback("Kung-Fu Chess", self._mouse_cb)
+
+        # spin up keyboard-based input handling
+        self.keyboard_processor = KeyboardProcessor(self.board.H_cells,
+                                                    self.board.W_cells)
+        self.keyboard_producer = KeyboardProducer(self,
+                                                  self.user_input_queue,
+                                                  self.keyboard_processor)
+        self.keyboard_producer.start()
 
     # ─── main public entrypoint ──────────────────────────────────────────────
     def run(self):
@@ -98,6 +113,10 @@ class Game:
         self._announce_win()
         cv2.destroyAllWindows()
 
+        # make sure background thread stops
+        if self.keyboard_producer is not None:
+            self.keyboard_producer.stop()
+
     # ─── drawing helpers ────────────────────────────────────────────────────
     def _draw(self):
         self.curr_board = self.clone_board()
@@ -106,6 +125,16 @@ class Game:
         for p in self.pieces:
             p.draw_on_board(self.curr_board, now_ms=self.game_time_ms())
             self.pos[p.state.physics.start_cell] = p
+
+        # overlay cursor highlight (green rectangle)
+        if self.keyboard_processor is not None:
+            r, c = self.keyboard_processor.get_cursor()
+            y1 = r * self.board.cell_H_pix
+            x1 = c * self.board.cell_W_pix
+            y2 = (r + 1) * self.board.cell_H_pix - 1
+            x2 = (c + 1) * self.board.cell_W_pix - 1
+            cv2.rectangle(self.curr_board.img.img, (x1, y1), (x2, y2),
+                          (0, 255, 0), 2)
 
     def _show(self) -> bool:
         cv2.imshow("Kung-Fu Chess", self.curr_board.img.img)
