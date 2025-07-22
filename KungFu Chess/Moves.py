@@ -15,7 +15,8 @@ class Moves:
 
     def get_moves(self, r: int, c: int) -> List[Tuple[int, int]]:
         moves = []
-        for dr, dc in self.rel_moves:
+        for mv in self.rel_moves:
+            dr, dc = mv[0], mv[1]
             nr, nc = r + dr, c + dc
             if 0 <= nr < self.H and 0 <= nc < self.W:
                 moves.append((nr, nc))

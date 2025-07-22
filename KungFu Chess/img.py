@@ -43,11 +43,16 @@ class Img:
 
             if keep_aspect:
                 scale = min(target_w / w, target_h / h)
-                new_w, new_h = int(w * scale), int(h * scale)
+                new_w = max(1, int(w * scale))
+                new_h = max(1, int(h * scale))
             else:
                 new_w, new_h = target_w, target_h
 
             self.img = cv2.resize(self.img, (new_w, new_h), interpolation=interpolation)
+            if self.img.shape[0] == 0 or self.img.shape[1] == 0:
+                raise ValueError(f"Invalid resized image: {self.img.shape} from {path}")
+
+            print(f"[DEBUG] Resized {path} to {self.img.shape}")
 
         return self
 
@@ -55,6 +60,7 @@ class Img:
         if self.img is None or other_img.img is None:
             raise ValueError("Both images must be loaded before drawing.")
 
+        # Convert to match other_img's channel count BEFORE slicing
         if self.img.shape[2] != other_img.img.shape[2]:
             if self.img.shape[2] == 3 and other_img.img.shape[2] == 4:
                 self.img = cv2.cvtColor(self.img, cv2.COLOR_BGR2BGRA)
@@ -64,8 +70,13 @@ class Img:
         h, w = self.img.shape[:2]
         H, W = other_img.img.shape[:2]
 
-        if y + h > H or x + w > W:
-            raise ValueError("Logo does not fit at the specified position.")
+        if h == 0 or w == 0:
+            print(f"[WARN] Skipping draw: source image has 0 size: {self.img.shape}")
+            return
+
+        if y < 0 or x < 0 or y + h > H or x + w > W:
+            print(f"[WARN] Skipping draw at ({x},{y}): roi size {(h, w)} exceeds board {(H, W)}")
+            return
 
         roi = other_img.img[y:y + h, x:x + w]
 

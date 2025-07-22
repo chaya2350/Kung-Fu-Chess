@@ -1,122 +1,94 @@
-import threading, queue
-from typing import Tuple, Optional
-
-import keyboard  # external dependency: pip install keyboard
-
+import threading
+import keyboard                  # pip install keyboard
 from Command import Command
 
-
 class KeyboardProcessor:
-    """Maintain cursor location and selection state based on key presses."""
-
-    def __init__(self, rows: int, cols: int):
+    """
+    Maintains a cursor on an R×C grid and maps raw key names
+    into logical actions via a user‑supplied keymap.
+    """
+    def __init__(self, rows: int, cols: int, keymap: dict[str, str]):
         self.rows = rows
         self.cols = cols
+        self.keymap = keymap
+        self._cursor = [0, 0]     # [row, col]
 
-        # board-relative coordinates (row, col)
-        self.cursor: Tuple[int, int] = (rows // 2, cols // 2)
+    def process_key(self, event):
+        # Only care about key‑down events
+        if event.event_type != "down":
+            return None
 
-        # two-step selection: first pick a piece, then pick destination square
-        self._stage: str = "select"  # or "dest"
-        self._selected_piece_id: Optional[str] = None
+        key = event.name
+        action = self.keymap.get(key)
+        print(f"[KEY] Pressed '{key}' → action {action!r}")
 
-        # re-entrant safety – Game + Producer can query state concurrently
-        self._lock = threading.Lock()
+        if action in ("up", "down", "left", "right"):
+            r, c = self._cursor
+            if action == "up":
+                r = max(0, r - 1)
+            elif action == "down":
+                r = min(self.rows - 1, r + 1)
+            elif action == "left":
+                c = max(0, c - 1)
+            elif action == "right":
+                c = min(self.cols - 1, c + 1)
+            self._cursor = [r, c]
+            print(f"[KEY] Cursor moved → ({r}, {c})")
 
-    # ────────────────────────────────────────────────────────────────────
-    def _clamp(self, v: int, lo: int, hi: int) -> int:
-        return max(lo, min(hi, v))
+        return action
 
-    def move_cursor(self, dr: int, dc: int):
-        """Move cursor by (dr, dc) within board bounds."""
-        with self._lock:
-            r, c = self.cursor
-            r = self._clamp(r + dr, 0, self.rows - 1)
-            c = self._clamp(c + dc, 0, self.cols - 1)
-            self.cursor = (r, c)
-
-    # ────────────────────────────────────────────────────────────────────
-    def process_key(self, key_name: str, game) -> Optional[Command]:
-        """Handle an OS key *down* event. Return a Command if one is produced."""
-        MOVE_VECTORS = {
-            "up": (-1, 0),
-            "down": (1, 0),
-            "left": (0, -1),
-            "right": (0, 1),
-        }
-
-        if key_name in MOVE_VECTORS:
-            dr, dc = MOVE_VECTORS[key_name]
-            self.move_cursor(dr, dc)
-            return None  # just moved cursor
-
-        if key_name == "enter":
-            return self._handle_enter(game)
-
-        return None
-
-    # ────────────────────────────────────────────────────────────────────
-    def _handle_enter(self, game) -> Optional[Command]:
-        """ENTER either selects a piece or finalises a move."""
-        with self._lock:
-            cell = self.cursor
-            if self._stage == "select":
-                piece = game.pos.get(cell)
-                if piece is not None:
-                    self._selected_piece_id = piece.id
-                    self._stage = "dest"  # next ENTER will be destination
-            else:  # stage == dest
-                if self._selected_piece_id is None:
-                    # Somehow lost the piece reference – reset.
-                    self._stage = "select"
-                    return None
-
-                cmd = Command(
-                    game.game_time_ms(),
-                    self._selected_piece_id,
-                    "Move",  # keyboard interface only supports normal Move
-                    [cell],
-                )
-                # reset state for next move
-                self._stage = "select"
-                self._selected_piece_id = None
-                return cmd
-        return None
-
-    # ────────────────────────────────────────────────────────────────────
-    def get_cursor(self) -> Tuple[int, int]:
-        with self._lock:
-            return self.cursor
+    def get_cursor(self) -> tuple[int, int]:
+        return tuple(self._cursor)
 
 
 class KeyboardProducer(threading.Thread):
-    """Background thread feeding Commands to Game.user_input_queue."""
-
-    def __init__(self, game, output_queue: "queue.Queue[Command]", processor: KeyboardProcessor):
+    """
+    Runs in its own daemon thread; hooks into the `keyboard` lib,
+    polls events, translates them via the KeyboardProcessor,
+    and turns `select`/`jump` into Command objects on the Game queue.
+    Each producer is tied to a player number (1 or 2).
+    """
+    def __init__(self, game, queue, processor: KeyboardProcessor, player: int):
         super().__init__(daemon=True)
-        self._game = game
-        self._output_queue = output_queue
-        self._proc = processor
-        self._running = threading.Event()
-        self._running.set()
+        self.game = game
+        self.queue = queue
+        self.proc = processor
+        self.player = player  # 1 or 2
 
-    # ────────────────────────────────────────────────────────────────────
     def run(self):
-        while self._running.is_set():
-            event = keyboard.read_event()
-            if event.event_type != keyboard.KEY_DOWN:
-                continue  # ignore KEY_UP
+        # Install our hook; it stays active until we call keyboard.unhook_all()
+        keyboard.hook(self._on_event)
+        keyboard.wait()
 
-            key = event.name  # e.g. "up", "a", "enter"
-            if key == "esc":
-                # allow player to quit via ESC
-                self.stop()
-                break
+    def _on_event(self, event):
+        action = self.proc.process_key(event)
+        # only interpret select/jump
+        if action in ("select", "jump"):
+            cell = self.proc.get_cursor()
+            # read/write the correct selected_id_X on the Game
+            sel_attr = f"selected_id_{self.player}"
+            selected = getattr(self.game, sel_attr)
 
-            cmd = self._proc.process_key(key, self._game)
-            if cmd is not None:
-                self._output_queue.put(cmd)
+            if selected is None:
+                # first press = pick up the piece under the cursor
+                piece = self.game.pos.get(cell)
+                if piece:
+                    # *optionally* only allow selection of that player's color:
+                    #   if piece.id[1] == ("W" if self.player == 1 else "B"):
+                    setattr(self.game, sel_attr, piece.id)
+                    print(f"[KEY] Player{self.player} selected {piece.id} at {cell}")
+            else:
+                # second press = issue the command
+                cmd_type = "Jump" if action == "jump" else "Move"
+                cmd = Command(
+                    self.game.game_time_ms(),
+                    selected,
+                    cmd_type,
+                    [cell]
+                )
+                self.queue.put(cmd)
+                print(f"[KEY] Player{self.player} queued {cmd_type} of {selected} → {cell} @ {cmd.timestamp}")
+                setattr(self.game, sel_attr, None)
 
-    # ────────────────────────────────────────────────────────────────────
     def stop(self):
-        self._running.clear() 
+        keyboard.unhook_all()

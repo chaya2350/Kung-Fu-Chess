@@ -6,12 +6,10 @@ from Command import Command
 from Piece   import Piece
 from img     import Img
 
-# NEW ───────────────────────────────────────────────────────────────────────
 from KeyboardInput import KeyboardProcessor, KeyboardProducer
 
-
 class InvalidBoard(Exception): ...
-# ────────────────────────────────────────────────────────────────────
+
 class Game:
     def __init__(self, pieces: List[Piece], board: Board):
         if not self._validate(pieces):
@@ -20,246 +18,197 @@ class Game:
         self.board            = board
         self.START_NS         = time.monotonic_ns()
         self.user_input_queue = queue.Queue()          # thread-safe
-        self.selected_id: Optional[str] = None         # piece currently picked
-
         # fast lookup tables ---------------------------------------------------
         self.pos            : Dict[Tuple[int, int], Piece] = {}
         self.piece_by_id    : Dict[str, Piece] = {p.id: p for p in pieces}
+
+        self.selected_id_1: Optional[str] = None
+        self.selected_id_2: Optional[str] = None
+        self.last_cursor2: Tuple[int, int] | None = None
+        self.last_cursor1: Tuple[int, int] | None = None
 
         # keyboard helpers ---------------------------------------------------
         self.keyboard_processor: Optional[KeyboardProcessor] = None
         self.keyboard_producer : Optional[KeyboardProducer]  = None
 
-    # ─── helpers ─────────────────────────────────────────────────────────────
     def game_time_ms(self) -> int:
         return (time.monotonic_ns() - self.START_NS) // 1_000_000
 
     def clone_board(self) -> Board:
-        """
-        Return a **brand-new** Board wrapping a copy of the background pixels
-        so we can paint sprites without touching the pristine board.
-        """
         img_copy = Img()
         img_copy.img = self.board.img.img.copy()
         return Board(self.board.cell_H_pix, self.board.cell_W_pix,
                      self.board.W_cells,    self.board.H_cells,
                      img_copy)
 
-    # ─── input thread – mouse → Command objects ─────────────────────────────
-    # Game._mouse_cb – add a check for right button
-    def _mouse_cb(self, event, x, y, flags, userdata):
-        event_is_down = event in (cv2.EVENT_LBUTTONDOWN, cv2.EVENT_RBUTTONDOWN)
-        if not event_is_down:
-            return
-
-        is_jump = (event == cv2.EVENT_RBUTTONDOWN)
-
-        cell = (y // self.board.cell_H_pix, x // self.board.cell_W_pix)
-
-        if self.selected_id is None:  # 1st click: select
-            piece = self.pos.get(cell)
-            if piece:
-                self.selected_id = piece.id
-        else:
-            cmd_type = "Jump" if is_jump else "Move"
-            cmd = Command(self.game_time_ms(),
-                          self.selected_id,
-                          cmd_type,
-                          [cell])
-            self.user_input_queue.put(cmd)
-            self.selected_id = None
-
     def start_user_input_thread(self):
-        # The window still needs to be created in the main thread so OpenCV can
-        # render frames. All keyboard handling happens in a background thread.
         cv2.namedWindow("Kung-Fu Chess")
 
-        # spin up keyboard-based input handling
-        self.keyboard_processor = KeyboardProcessor(self.board.H_cells,
-                                                    self.board.W_cells)
-        self.keyboard_producer = KeyboardProducer(self,
-                                                  self.user_input_queue,
-                                                  self.keyboard_processor)
-        self.keyboard_producer.start()
+        # player 1 key‐map
+        p1_map = {
+            "up": "up", "down": "down", "left": "left", "right": "right",
+            "enter": "select", "+": "jump"
+        }
+        # player 2 key‐map
+        p2_map = {
+            "w": "up", "s": "down", "a": "left", "d": "right",
+            "f": "select", "g": "jump"
+        }
 
-    # ─── main public entrypoint ──────────────────────────────────────────────
+        # create two processors
+        self.kp1 = KeyboardProcessor(self.board.H_cells,
+                                     self.board.W_cells,
+                                     keymap=p1_map)
+        self.kp2 = KeyboardProcessor(self.board.H_cells,
+                                     self.board.W_cells,
+                                     keymap=p2_map)
+
+        # **pass the player number** as the 4th argument!
+        self.kb_prod_1 = KeyboardProducer(self,
+                                          self.user_input_queue,
+                                          self.kp1,
+                                          player=1)
+        self.kb_prod_2 = KeyboardProducer(self,
+                                          self.user_input_queue,
+                                          self.kp2,
+                                          player=2)
+
+        self.kb_prod_1.start()
+        self.kb_prod_2.start()
+
     def run(self):
         self.start_user_input_thread()
         start_ms = self.game_time_ms()
         for p in self.pieces:
             p.reset(start_ms)
 
-        # ─────── main loop ──────────────────────────────────────────────────
         while not self._is_win():
             now = self.game_time_ms()
-
-            # (1) update physics & animations
             for p in self.pieces:
                 p.update(now)
-
-            # (2) handle queued Commands from mouse thread
             while not self.user_input_queue.empty():
                 cmd: Command = self.user_input_queue.get()
                 self._process_input(cmd)
-
-            # (3) draw current position
             self._draw()
-            if not self._show():           # returns False if user closed window
+            if not self._show():
                 break
-
-            # (4) detect captures
             self._resolve_collisions()
 
         self._announce_win()
         cv2.destroyAllWindows()
+        if self.kb_prod_1:
+            self.kb_prod_1.stop()
+            self.kb_prod_2.stop()
 
-        # make sure background thread stops
-        if self.keyboard_producer is not None:
-            self.keyboard_producer.stop()
-
-    # ─── drawing helpers ────────────────────────────────────────────────────
     def _draw(self):
         self.curr_board = self.clone_board()
-        # rebuild position map each frame
         self.pos.clear()
         for p in self.pieces:
             p.draw_on_board(self.curr_board, now_ms=self.game_time_ms())
+
             self.pos[p.state.physics.start_cell] = p
 
-        # overlay cursor highlight (green rectangle)
-        if self.keyboard_processor is not None:
-            r, c = self.keyboard_processor.get_cursor()
-            y1 = r * self.board.cell_H_pix
-            x1 = c * self.board.cell_W_pix
-            y2 = (r + 1) * self.board.cell_H_pix - 1
-            x2 = (c + 1) * self.board.cell_W_pix - 1
-            cv2.rectangle(self.curr_board.img.img, (x1, y1), (x2, y2),
-                          (0, 255, 0), 2)
+        # overlay both players' cursors, but only log on change
+        if self.kp1 and self.kp2:
+            for player, kp, last in (
+                (1, self.kp1, 'last_cursor1'),
+                (2, self.kp2, 'last_cursor2')
+            ):
+                r, c = kp.get_cursor()
+                # draw rectangle
+                y1 = r * self.board.cell_H_pix; x1 = c * self.board.cell_W_pix
+                y2 = y1 + self.board.cell_H_pix - 1; x2 = x1 + self.board.cell_W_pix - 1
+                color = (0,255,0) if player==1 else (255,0,0)
+                cv2.rectangle(self.curr_board.img.img, (x1,y1), (x2,y2), color, 2)
+                # only print if moved
+                prev = getattr(self, last)
+                if prev != (r,c):
+                    print(f"[DRAW] Marker P{player} at ({r}, {c})")
+                    setattr(self, last, (r,c))
 
     def _show(self) -> bool:
         cv2.imshow("Kung-Fu Chess", self.curr_board.img.img)
         key = cv2.waitKey(1) & 0xFF
-        return key != 27  # only Esc quits
+        return key != 27
 
     def _side_of(self, piece_id: str) -> str:
-        """
-        Return 'W' or 'B' from an id formatted like 'PW_(6,1)'.
-        Second character after the initial type letter is the colour.
-        """
-        return piece_id[1]  # e.g. 'PW' → 'W'  ·  'KB' → 'B'
+        return piece_id[1]
 
     def _path_is_clear(self, a, b):
-        ar, ac = a
-        br, bc = b
-        dr = (br - ar) and ((br - ar) // abs(br - ar))
-        dc = (bc - ac) and ((bc - ac) // abs(bc - ac))
-        r, c = ar + dr, ac + dc
-        while (r, c) != (br, bc):
-            if (r, c) in self.pos:
-                return False
-            r, c = r + dr, c + dc
+        ar, ac = a; br, bc = b
+        dr = (br-ar) and ((br-ar)//abs(br-ar))
+        dc = (bc-ac) and ((bc-ac)//abs(bc-ac))
+        r, c = ar+dr, ac+dc
+        while (r,c) != (br,bc):
+            if (r,c) in self.pos: return False
+            r, c = r+dr, c+dc
         return True
 
     def _process_input(self, cmd: Command):
         mover = self.piece_by_id.get(cmd.piece_id)
         if not mover:
-            print(f"[DBG] unknown piece id {cmd.piece_id}")
+            return
+        now_ms = self.game_time_ms()
+        if not mover.state.can_transition(now_ms):
+            print(f"[FAIL] {mover.id} busy until {mover.state.cooldown_end_ms}")
             return
 
-        now_ms = self.game_time_ms()
-
-        # ---- 1. choose the *candidate* state for rules & sprites -------------
         candidate_state = mover.state.transitions.get(cmd.type, mover.state)
-        moveset = candidate_state.moves  # rules for Move / Jump / Idle
-
-        # ---- 2. legality checks ---------------------------------------------
+        moveset = candidate_state.moves
         src = mover.state.physics.start_cell
         dest = cmd.params[0]
-
         legal_offset = dest in moveset.get_moves(*src)
-
-        #???
+        # Pawn-specific...
         piece_type = mover.id[0]
-        # extra rules only for pawns ---------------------------------------------
-        if piece_type == "P":
-            direction = -1 if mover.id[1] == "W" else 1  # white moves up
-            dr, dc = dest[0] - src[0], dest[1] - src[1]
-
-            forward_move = dr == direction and dc == 0
-            diagonal_move = dr == direction and abs(dc) == 1
-            occupant = self.pos.get(dest)
-
-            if forward_move:
-                # pawn can advance only into an empty square
-                legal_offset = legal_offset and occupant is None
-            elif diagonal_move:
-                # pawn can capture only if an enemy occupies the square
-                legal_offset = legal_offset and occupant is not None \
-                               and occupant.id[1] != mover.id[1]
+        if piece_type == 'P':
+            direction = -1 if mover.id[1]=='W' else 1
+            dr, dc = dest[0]-src[0], dest[1]-src[1]
+            forward = (dr==direction and dc==0)
+            diag    = (dr==direction and abs(dc)==1)
+            occ = self.pos.get(dest)
+            if forward:
+                legal_offset &= occ is None
+            elif diag:
+                legal_offset &= (occ is not None and occ.id[1]!=mover.id[1])
             else:
                 legal_offset = False
-        # ------------------------------------------------------------------------
-
-        occupant = self.pos.get(dest)
-        friendly_block = (
-                occupant is not None  # a piece is there
-                and occupant is not mover  # ← restore this condition
-                and occupant.id[1] == mover.id[1]
-        )
-
-        # (optional) clear-path test for rook/bishop/queen
-        path_clear = True
-        if mover.id[0] in ("R", "B", "Q"):  # straight / diagonal sliders
-            path_clear = self._path_is_clear(src, dest)
-
-        print(f"[DBG] {cmd.type} {src}->{dest}  "
-              f"offset_ok={legal_offset}  friend={friendly_block}  clear={path_clear}")
-
-        # ---- 3. outcome ------------------------------------------------------
-        if legal_offset and path_clear and not friendly_block:
-            # use the candidate state (this switches sprites & physics)
+        occ = self.pos.get(dest)
+        friendly = (occ and occ is not mover and occ.id[1]==mover.id[1])
+        clear = True
+        if mover.id[0] in ('R','B','Q'):
+            clear = self._path_is_clear(src, dest)
+        if legal_offset and clear and not friendly:
             mover.state = candidate_state
-            mover.state.reset(cmd)  # sets new cooldown & physics
-            print(f"[EXEC] {mover.id} performs {cmd.type}")
+            mover.state.reset(cmd)
         else:
-            # illegal: stay / go back to idle sprites (no movement)
-            mover.state.reset(Command(now_ms, mover.id, "Idle", []))
-            print("[FAIL] move rejected")
+            mover.state.reset(Command(now_ms, mover.id, 'Idle', []))
 
-    # ─── capture resolution ────────────────────────────────────────────────
     def _resolve_collisions(self):
-        occupied: Dict[Tuple[int, int], List[Piece]] = {}
+        occupied: Dict[Tuple[int,int], List[Piece]] = {}
         for p in self.pieces:
             cell = p.state.physics.start_cell
             occupied.setdefault(cell, []).append(p)
-
         for cell, plist in occupied.items():
-            if len(plist) < 2:
-                continue
-            # pick winner = earliest command timestamp
-            winner = max(plist, key=lambda pc: pc.state.physics.start_ms)
-
+            if len(plist)<2: continue
+            winner = max(plist, key=lambda pc:pc.state.physics.start_ms)
             for p in plist:
                 if p is not winner and p.state.physics.can_be_captured():
                     self.pieces.remove(p)
 
-    # ─── board validation & win detection ───────────────────────────────────
     def _validate(self, pieces: List[Piece]) -> bool:
-        seen_cells = set()
-        has_white_king = has_black_king = False
+        seen=set(); wking=bking=False
         for p in pieces:
             cell = p.state.physics.start_cell
-            if cell in seen_cells:
-                return False
-            seen_cells.add(cell)
-            if p.id.startswith("KW"): has_white_king = True
-            if p.id.startswith("KB"): has_black_king  = True
-        return has_white_king and has_black_king
+            if cell in seen: return False
+            seen.add(cell)
+            if p.id.startswith('KW'): wking=True
+            if p.id.startswith('KB'): bking=True
+        return wking and bking
 
     def _is_win(self) -> bool:
-        kings = [p for p in self.pieces if p.id.startswith(("KW", "KB"))]
-        return len(kings) < 2
+        kings=[p for p in self.pieces if p.id.startswith(('KW','KB'))]
+        return len(kings)<2
 
     def _announce_win(self):
-        text = "Black wins!" if any(p.id.startswith("KB") for p in self.pieces) else "White wins!"
+        text = 'Black wins!' if any(p.id.startswith('KB') for p in self.pieces) else 'White wins!'
         print(text)

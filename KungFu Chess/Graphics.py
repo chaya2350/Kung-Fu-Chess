@@ -29,16 +29,20 @@ class Graphics:
         # shallow copy is enough: frames list is immutable PNGs
         return copy.copy(self)
 
-    def _load_sprites(self,
-                      folder: pathlib.Path,
-                      cell_size: tuple[int, int]) -> list[Img]:
+    def _load_sprites(self, folder, cell_size):
         frames = []
         for p in sorted(folder.glob("*.png")):
             frames.append(Img().read(p, size=cell_size, keep_aspect=True))
-        if not frames:                            # transparent 1 px fallback
+        if not frames:
             import numpy as np
-            frames.append(Img(img=np.zeros((*cell_size, 4), dtype=np.uint8)))
+            width, height = cell_size
+
+            blank = np.zeros((height, width, 4), dtype=np.uint8)
+            img = Img()
+            img.img = blank      # force a real H×W×4 array
+            frames.append(img)
         return frames
+
 
     def reset(self, cmd: Command):
         self.start_ms = cmd.timestamp
