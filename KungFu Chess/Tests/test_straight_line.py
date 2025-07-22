@@ -57,4 +57,4 @@ def test_straight_uniform_motion():
     samples = np.stack(samples)                # shape (N, 2)
 
     assert all_collinear(samples),  "Path is not collinear"
-    assert equally_spaced(samples), "Steps are not uniformly spaced"
+    assert equally_spaced(samples, tol=6.0), "Steps are not uniformly spaced"

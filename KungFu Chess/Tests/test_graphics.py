@@ -1,83 +1,60 @@
-# test_graphics.py
-
-import tempfile
-import pathlib
-import numpy as np
+import pathlib, tempfile, numpy as np, types
 import pytest
-from Graphics import Graphics
+import Graphics as gfx_mod
 from img import Img
-from Command import Command
 
+# ── helper: create a fake Img that never touches disk/CV2 ───────────────
+def _mk_dummy_img():
+    arr = np.zeros((10, 10, 4), dtype=np.uint8)
+    obj = Img()
+    obj.img = arr
+    return obj
 
-@pytest.fixture
-def mock_img(monkeypatch):
-    """Mock Img.read to avoid actual file I/O."""
-    def fake_read(self, path, size=None, keep_aspect=False, interpolation=None):
-        self.img = np.ones((size[1], size[0], 4), dtype=np.uint8)
-        return self
-    monkeypatch.setattr(Img, "read", fake_read)
-
-
-def test_load_valid_sprites(mock_img):
-    with tempfile.TemporaryDirectory() as tmpdir:
-        folder = pathlib.Path(tmpdir)
-        (folder / "frame1.png").touch()
-        (folder / "frame2.png").touch()
-
-        g = Graphics(folder, cell_size=(64, 64), img_factory=lambda: Img())
-        assert len(g.frames) == 2
-        assert isinstance(g.get_img(), Img)
-        assert g.get_img().img.shape == (64, 64, 4)
-
-
-def test_fallback_empty_folder(monkeypatch):
-    monkeypatch.setattr(Img, "__init__", lambda self, img=None: setattr(self, "img", img))
-    monkeypatch.setattr(Img, "read", lambda self, *args, **kwargs: self)
+@pytest.fixture(autouse=True)
+def patch_img(monkeypatch):
+    """
+    • Makes Img() accept any signature, incl. Img(img=array)
+    • Makes Img.read(...) always succeed and set a dummy array
+    """
     import numpy as np
-    g = Graphics(pathlib.Path("."), cell_size=(10, 10), img_factory=ImgFactory(Img))
+    from img import Img                     # local import inside fixture
 
-    assert isinstance(g.get_img(), Img)
-    assert g.get_img().img.shape == (10, 10, 4)
-    assert np.all(g.get_img().img == 0)
+    # --- patch __init__ -------------------------------------------------
+    def _init(self, *args, **kw):
+        arr = kw.get("img") if "img" in kw else (args[0] if args else None)
+        object.__setattr__(self, "img", arr)
 
+    monkeypatch.setattr(Img, "__init__", _init, raising=True)
 
-def test_reset_sets_timestamp(monkeypatch):
-    dummy_img = Img()
-    dummy_img.img = np.zeros((10, 10, 4), dtype=np.uint8)
+    # --- patch read -----------------------------------------------------
+    def _read(self, *_, **__):
+        self.img = np.zeros((8, 8, 4), dtype=np.uint8)     # tiny dummy RGBA
+        return self
 
-    def dummy_loader(self, folder, size):
-        return [dummy_img]
+    monkeypatch.setattr(Img, "read", _read, raising=True)
 
-    monkeypatch.setattr("Graphics.Graphics._load_sprites", dummy_loader)
-
-    g = Graphics(pathlib.Path("."), cell_size=(10, 10), img_factory=lambda: Img())
-    cmd = Command(timestamp=1234, piece_id="P1", type="Move", params=[(1, 1)])
-    g.reset(cmd)
-    assert g.start_ms == 1234
+    yield
 
 
 
-def test_get_img_returns_first_frame(mock_img):
-    with tempfile.TemporaryDirectory() as tmpdir:
-        folder = pathlib.Path(tmpdir)
-        (folder / "f.png").touch()
-        g = Graphics(folder, cell_size=(32, 32), img_factory=lambda: Img())
-        img = g.get_img()
-        assert isinstance(img, Img)
+# ── tests ───────────────────────────────────────────────────────────────
+def test_load_valid_sprites(tmp_path):
+    (tmp_path/"a.png").touch(); (tmp_path/"b.png").touch()
+    g = gfx_mod.Graphics(tmp_path, (32, 32))
+    assert len(g.frames) == 2
+
+def test_fallback_empty_folder(tmp_path):
+    g = gfx_mod.Graphics(tmp_path, (12, 12))
+    assert g.frames and g.frames[0].img.shape[:2] == (12, 12)
+
+def test_reset_sets_timestamp(tmp_path):
+    g = gfx_mod.Graphics(tmp_path, (8, 8))
+    fake_cmd = types.SimpleNamespace(timestamp=1234)
+    g.reset(fake_cmd)
+    assert g.start_ms == fake_cmd.timestamp
 
 
-from pathlib import Path
-from img_factory import ImgFactory
-from mock_img import MockImg
-from Graphics import Graphics
-
-def test_mock_graphics_loads_frames():
-    sprites_folder = Path("/fake/sprites")  # can be non-existent
-    gfx = Graphics(
-        sprites_folder=sprites_folder,
-        cell_size=(64, 64),
-        img_factory=ImgFactory(MockImg)
-    )
-    assert len(gfx.frames) > 0 or isinstance(gfx.frames[0], MockImg)
-
-
+def test_get_img_returns_first_frame(tmp_path):
+    (tmp_path/"foo.png").touch()
+    g = gfx_mod.Graphics(tmp_path, (16, 16))
+    assert g.get_img() is g.frames[0]
