@@ -1,10 +1,10 @@
-import queue, threading, time, cv2, math, logging
+import queue, threading, time, math, logging
 from typing import List, Dict, Tuple, Optional
 
 from Board   import Board
 from Command import Command
 from Piece   import Piece
-from img     import Img
+from img import Img, close_all_img_windows, draw_rect
 
 from KeyboardInput import KeyboardProcessor, KeyboardProducer
 
@@ -45,7 +45,6 @@ class Game:
                      img_copy)
 
     def start_user_input_thread(self):
-        cv2.namedWindow("Kung-Fu Chess")
 
         # player 1 key‐map
         p1_map = {
@@ -93,12 +92,11 @@ class Game:
                 cmd: Command = self.user_input_queue.get()
                 self._process_input(cmd)
             self._draw()
-            if not self._show():
-                break
+            self._show()
             self._resolve_collisions()
 
         self._announce_win()
-        cv2.destroyAllWindows()
+        close_all_img_windows()
         if self.kb_prod_1:
             self.kb_prod_1.stop()
             self.kb_prod_2.stop()
@@ -121,17 +119,15 @@ class Game:
                 y1 = r * self.board.cell_H_pix; x1 = c * self.board.cell_W_pix
                 y2 = y1 + self.board.cell_H_pix - 1; x2 = x1 + self.board.cell_W_pix - 1
                 color = (0,255,0) if player==1 else (255,0,0)
-                cv2.rectangle(self.curr_board.img.img, (x1,y1), (x2,y2), color, 2)
+                draw_rect(self.curr_board.img.img, x1, y1, x2, y2, color)
                 # only print if moved
                 prev = getattr(self, last)
                 if prev != (r, c):
                     logger.debug("Marker P%s moved to (%s, %s)", player, r, c)
                     setattr(self, last, (r, c))
 
-    def _show(self) -> bool:
-        cv2.imshow("Kung-Fu Chess", self.curr_board.img.img)
-        key = cv2.waitKey(1) & 0xFF
-        return key != 27
+    def _show(self):
+        self.curr_board.show()
 
     def _side_of(self, piece_id: str) -> str:
         return piece_id[1]
@@ -151,43 +147,21 @@ class Game:
         if not mover:
             logger.debug("Unknown piece id %s", cmd.piece_id)
             return
+
         now_ms = self.game_time_ms()
         if not mover.state.can_transition(now_ms):
-            logger.info("%s still in cooldown until %s ms", mover.id, mover.state.cooldown_end_ms)
+            logger.debug("%s still in cooldown until %s ms", mover.id, mover.state.cooldown_end_ms)
             return
 
-        candidate_state = mover.state.transitions.get(cmd.type, mover.state)
-        moveset = candidate_state.moves
-        src = mover.current_cell()
-        dest = cmd.params[0]
-        legal_offset = dest in moveset.get_moves(*src) or cmd.type == 'Jump'
-        # Pawn-specific...
-        piece_type = mover.id[0]
-        if piece_type == 'P' and cmd.type != 'Jump':
-            direction = -1 if mover.id[1] == 'W' else 1
-            dr, dc = dest[0] - src[0], dest[1] - src[1]
-            forward = (dr == direction and dc == 0)
-            diag = (dr == direction and abs(dc) == 1)
-            occ = self.pos.get(dest)
-            if forward:
-                legal_offset &= occ is None
-            elif diag:
-                legal_offset &= (occ is not None and occ.id[1] != mover.id[1])
-            else:
-                legal_offset = False
+        if not mover.state.is_legal(mover, cmd, self.pos, self._path_is_clear):
+            mover.state.reset(Command(now_ms, mover.id, "Idle", []))
+            logger.info("Move rejected for %s to %s", mover.id, cmd.params[0])
+            return
 
-        occ = self.pos.get(dest)
-        friendly = (occ and occ is not mover and occ.id[1] == mover.id[1])
-        clear = True
-        if mover.id[0] in ('R','B','Q'):
-            clear = self._path_is_clear(src, dest)
-        if legal_offset and clear and not friendly:
-            mover.state = candidate_state
-            mover.state.reset(cmd)
-            logger.info("%s performs %s to %s", mover.id, cmd.type, dest)
-        else:
-            mover.state.reset(Command(now_ms, mover.id, 'Idle', []))
-            logger.info("Move rejected for %s to %s", mover.id, dest)
+        nxt = mover.state.transitions.get(cmd.type, mover.state)
+        mover.state = nxt
+        mover.state.reset(cmd)
+        logger.info("%s performs %s to %s", mover.id, cmd.type, cmd.params[0])
 
     def _resolve_collisions(self):
         occupied: Dict[Tuple[int,int], List[Piece]] = {}

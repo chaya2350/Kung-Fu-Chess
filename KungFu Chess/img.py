@@ -99,8 +99,14 @@ class Img:
         if self.img is None:
             raise ValueError("Image not loaded.")
         cv2.imshow("Image", self.img)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        cv2.waitKey(1)
+
+
+def close_all_img_windows():
+    cv2.destroyAllWindows()
+
+def draw_rect(img, x1, y1, x2, y2, color):
+    cv2.rectangle(img, (x1, y1), (x2, y2), color, 2)
 
 #
 # # mock_img.py

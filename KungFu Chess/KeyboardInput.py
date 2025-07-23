@@ -65,6 +65,12 @@ class KeyboardProducer(threading.Thread):
         keyboard.hook(self._on_event)
         keyboard.wait()
 
+    def _find_piece_at(self, cell):
+        for p in self.game.pieces:
+            if p.state.physics.start_cell == cell:
+                return p
+        return None
+
     def _on_event(self, event):
         action = self.proc.process_key(event)
         # only interpret select/jump
@@ -76,12 +82,17 @@ class KeyboardProducer(threading.Thread):
 
             if selected is None:
                 # first press = pick up the piece under the cursor
-                piece = self.game.pos.get(cell)
+                #piece = self.game.pos.get(cell)
+                piece = self._find_piece_at(cell)
+
                 if piece:
                     # *optionally* only allow selection of that player's color:
                     #   if piece.id[1] == ("W" if self.player == 1 else "B"):
                     setattr(self.game, sel_attr, piece.id)
                     print(f"[KEY] Player{self.player} selected {piece.id} at {cell}")
+                else:
+                    print(f"[WARN] No piece at {cell}")
+
             else:
                 # second press = issue the command
                 cmd_type = "Jump" if action == "jump" else "Move"

@@ -18,3 +18,6 @@ class Board:
                      self.W_cells,    self.H_cells,
                      new_img)
 
+    def show(self):
+        self.img.show()
+

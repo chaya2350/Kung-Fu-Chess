@@ -25,7 +25,16 @@ class DummyState:
     def can_transition(self,_): return True
     def reset(self,cmd): self.physics.reset(cmd)
     def get_state_after_command(self,cmd,now_ms): return self
+    def is_legal(self, mover, cmd, pos, _):
+        src = mover.current_cell()
+        dest = cmd.params[0]
+        if dest not in self.moves.get_moves(*src):
+            return False
+        occ = pos.get(dest)
+        if occ is not None and occ.id[1] == mover.id[1]:
+            return False
 
+        return True
 class DummyPiece:
     def __init__(self,pid,cell,legal_moves=()):
         self.id=pid
