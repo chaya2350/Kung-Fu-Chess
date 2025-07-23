@@ -19,10 +19,12 @@ class DummyGraphics:
     def get_img(self):    return None
 
 class DummyMoves:
-    def __init__(self, rel, size): self.rel, self.W, self.H = rel, *size
-    def get_moves(self, r,c):
-        return {(r+dr, c+dc) for dr,dc in self.rel
-                if 0<=r+dr<self.H and 0<=c+dc<self.W}
+    def __init__(self, rel, size, legal_moves=None):
+        self.rel, self.W, self.H = rel, *size
+        self.legal_moves = legal_moves or []
+
+    def get_moves(self, r, c, *args, **kwargs):
+        return [(r+dr, c+dc) for dr,dc in self.legal_moves]
 
 class DummyBoard:
     def __init__(self, n=8): self.cell_H_pix=self.cell_W_pix=70; self.W_cells=self.H_cells=n

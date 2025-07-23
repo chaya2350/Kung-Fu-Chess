@@ -99,7 +99,7 @@ class Img:
         if self.img is None:
             raise ValueError("Image not loaded.")
         cv2.imshow("Image", self.img)
-        cv2.waitKey(0)
+        cv2.waitKey(1)
 
 
 def close_all_img_windows():

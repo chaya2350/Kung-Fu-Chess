@@ -92,8 +92,7 @@ class Game:
                 cmd: Command = self.user_input_queue.get()
                 self._process_input(cmd)
             self._draw()
-            if not self._show():
-                break
+            self._show()
             self._resolve_collisions()
 
         self._announce_win()
@@ -127,7 +126,7 @@ class Game:
                     logger.debug("Marker P%s moved to (%s, %s)", player, r, c)
                     setattr(self, last, (r, c))
 
-    def _show(self) -> bool:
+    def _show(self):
         self.curr_board.show()
 
     def _side_of(self, piece_id: str) -> str:
@@ -148,44 +147,21 @@ class Game:
         if not mover:
             logger.debug("Unknown piece id %s", cmd.piece_id)
             return
+
         now_ms = self.game_time_ms()
         if not mover.state.can_transition(now_ms):
-            logger.info("%s still in cooldown until %s ms", mover.id, mover.state.cooldown_end_ms)
+            logger.debug("%s still in cooldown until %s ms", mover.id, mover.state.cooldown_end_ms)
             return
 
-        candidate_state = mover.state.transitions.get(cmd.type, mover.state)
-        moveset = candidate_state.moves
-        src = mover.current_cell()
-        dest = cmd.params[0]
+        if not mover.state.is_legal(mover, cmd, self.pos, self._path_is_clear):
+            mover.state.reset(Command(now_ms, mover.id, "Idle", []))
+            logger.info("Move rejected for %s to %s", mover.id, cmd.params[0])
+            return
 
-        legal_offset = dest in moveset.get_moves(*src) or cmd.type == 'Jump'
-        # Pawn-specific...
-        piece_type = mover.id[0]
-        if piece_type == 'P' and cmd.type != 'Jump':
-            direction = -1 if mover.id[1] == 'W' else 1
-            dr, dc = dest[0] - src[0], dest[1] - src[1]
-            forward = (dr == direction and dc == 0)
-            diag = (dr == direction and abs(dc) == 1)
-            occ = self.pos.get(dest)
-            if forward:
-                legal_offset &= occ is None
-            elif diag:
-                legal_offset &= (occ is not None and occ.id[1] != mover.id[1])
-            else:
-                legal_offset = False
-
-        occ = self.pos.get(dest)
-        friendly = (occ and occ is not mover and occ.id[1] == mover.id[1])
-        clear = True
-        if mover.id[0] in ('R','B','Q','P'):
-            clear = self._path_is_clear(src, dest)
-        if legal_offset and clear and not friendly:
-            mover.state = candidate_state
-            mover.state.reset(cmd)
-            logger.info("%s performs %s to %s", mover.id, cmd.type, dest)
-        else:
-            mover.state.reset(Command(now_ms, mover.id, 'Idle', []))
-            logger.info("Move rejected for %s to %s", mover.id, dest)
+        nxt = mover.state.transitions.get(cmd.type, mover.state)
+        mover.state = nxt
+        mover.state.reset(cmd)
+        logger.info("%s performs %s to %s", mover.id, cmd.type, cmd.params[0])
 
     def _resolve_collisions(self):
         occupied: Dict[Tuple[int,int], List[Piece]] = {}

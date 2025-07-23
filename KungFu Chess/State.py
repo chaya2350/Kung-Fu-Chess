@@ -1,9 +1,12 @@
+from __future__ import annotations
 from Command import Command
 from Moves import Moves
 from Graphics import Graphics
 from Physics import Physics
-from typing import Dict
+from typing import Dict, Callable
 import time, logging
+
+from Piece import Piece
 
 logger = logging.getLogger(__name__)
 
@@ -94,3 +97,49 @@ class State:
     def get_command(self) -> Command:
         # Minimal placeholder – extend as needed.
         return Command(self.physics.start_ms, "?", "Idle", [])
+
+    def is_legal(self,
+                 mover: Piece,
+                 cmd: Command,
+                 pos: dict[tuple[int, int], Piece],
+                 path_is_clear: Callable[[tuple[int, int], tuple[int, int]], bool]
+                 ) -> bool:
+        src, dest = mover.current_cell(), cmd.params[0]
+        #TODO: current cell not relevant on move
+        piece_type, color = mover.id[0], mover.id[1]
+
+        # ignore self‑occupancy so jumping to your own square isn’t "friendly"
+        occ = pos.get(dest)
+        if occ is mover:
+            occ = None
+        friendly = (occ is not None and occ.id[1] == color)
+
+        # 1) compute basic legality
+        #TODO: @stoped here
+        if piece_type == "P" and cmd.type != "Jump":
+            # ––––– determine occupancy once –––––
+            occ = pos.get(dest)
+
+            allow_first = mover.state.name.startswith("first_idle")
+
+            legal = dest in self.moves.get_moves(*src,
+                                                 color,
+                                                 capture_only=(occ is not None),
+                                                 noncap_only=(occ is None),
+                                                 allow_first=allow_first)
+        else:
+            # all other pieces: either in your Moves set or a Jump command
+            legal = (cmd.type == "Jump" or dest in self.moves.get_moves(*src))
+
+
+
+        # 2) path clearance: skip for Jump or knights
+        if cmd.type == "Jump" or piece_type == "N":
+            clear = True
+        elif piece_type in ("R", "B", "Q", "P"):
+            clear = path_is_clear(src, dest)
+        else:
+            clear = True
+
+        print(f"Is legal: {legal}, Is clear: {clear}, Is friendly: {friendly}")
+        return legal and clear and not friendly

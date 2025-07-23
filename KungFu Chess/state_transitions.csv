@@ -1,0 +1,10 @@
+from_state,event,to_state
+first_idle,Move,first_move
+first_idle,Jump,jump
+first_move,Arrived,long_rest
+idle,Move,move
+idle,Jump,jump
+move,Arrived,long_rest
+jump,Arrived,short_rest
+short_rest,Arrived,idle
+long_rest,Arrived,idle

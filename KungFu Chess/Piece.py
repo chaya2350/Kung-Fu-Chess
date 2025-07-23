@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 from Board import Board
 from Command import Command
-from State import State
 import cv2
+from typing import Callable, Dict, Tuple
+
 
 class Piece:
     def __init__(self, piece_id: str, init_state: State):
@@ -42,4 +45,12 @@ class Piece:
     def current_cell(self) -> tuple[int, int]:
         """Return the piece's board cell as (row, col)."""
         return self.state.physics.start_cell
+
+    def is_legal(self,
+                 cmd: Command,
+                 pos: Dict[Tuple[int, int], Piece],
+                 path_is_clear: Callable[[Tuple[int, int], Tuple[int, int]], bool]
+                 ) -> bool:
+        return self.state.is_legal(self, cmd, pos, path_is_clear)
+
 

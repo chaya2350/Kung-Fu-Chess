@@ -32,7 +32,7 @@ def board():
 # ─── Moves --------------------------------------------------------------
 def test_moves_within_bounds(board):
     m = Moves.__new__(Moves)
-    m.rel_moves = [(1,0),(0,1),(-1,-1),(7,7),(-8,0)]
+    m.rel_moves = [(1,0,-1),(0,1,-1),(-1,-1,-1),(7,7,-1),(-8,0,-1)]
     m.W = m.H = 8
     assert sorted(m.get_moves(0,0)) == [(0,1),(1,0),(7,7)]
     assert m.get_moves(7,7) == [(6,6)]
