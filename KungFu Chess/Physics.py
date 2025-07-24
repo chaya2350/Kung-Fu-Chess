@@ -92,7 +92,7 @@ class MovePhysics(BasePhysics):
         self._curr_pos_m = np.array(self.board.cell_to_m(self._start_cell)) + self._movement_vector * seconds_passed * self._speed_m_s
         
         if seconds_passed >= self._duration_s:
-            return Command(now_ms, None, "done", [])
+            return Command(now_ms, None, "done", [self._end_cell])
 
         return None
 
@@ -115,7 +115,7 @@ class StaticTemporaryPhysics(BasePhysics):
     def update(self, now_ms: int):
         seconds_passed = (now_ms - self._start_ms) / 1000
         if seconds_passed >= self.duration_s:
-            return Command(now_ms, None, "done", [])
+            return Command(now_ms, None, "done", [self._end_cell])
 
         return None
 

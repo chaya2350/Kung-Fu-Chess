@@ -5,6 +5,7 @@ from img import Img
 from PhysicsFactory import PhysicsFactory
 from Physics import IdlePhysics, MovePhysics, JumpPhysics, RestPhysics
 from PieceFactory import PieceFactory
+from GraphicsFactory import GraphicsFactory, MockImgFactory
 
 # ---------------------------------------------------------------------------
 #                               HELPERS
@@ -51,7 +52,8 @@ def test_physics_factory_creates_correct_subclasses():
 
 def test_piece_factory_generates_and_creates_pieces():
     board = _board()
-    p_factory = PieceFactory(board)
+    gfx_factory = GraphicsFactory(MockImgFactory())
+    p_factory = PieceFactory(board, graphics_factory=gfx_factory)
 
     pieces_root = pathlib.Path(__file__).parent.parent / "pieces"
     # Ensure library generation does not raise

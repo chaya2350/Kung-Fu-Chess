@@ -8,6 +8,7 @@ from Piece import Piece
 from State import State
 from Physics import IdlePhysics, MovePhysics, JumpPhysics
 from Graphics import Graphics
+from GraphicsFactory import MockImgFactory
 from img import Img
 
 
@@ -23,7 +24,10 @@ def _board(cells: int = 8):
 
 
 def _graphics():
-    return Graphics(sprites_folder=pathlib.Path("."), cell_size=(32, 32), loop=False, fps=1.0)
+    sprites_dir = pathlib.Path(__file__).parent.parent / "pieces" / "BB" / "states" / "idle" / "sprites"
+    return Graphics(sprites_folder=sprites_dir, cell_size=(32, 32),
+                    loop=False, fps=1.0,
+                    img_loader=MockImgFactory())
 
 
 def _make_piece(piece_id: str, cell: tuple[int, int], board: Board) -> Piece:
@@ -48,7 +52,7 @@ def _make_piece(piece_id: str, cell: tuple[int, int], board: Board) -> Piece:
     jump.set_transition("done", idle)
 
     piece = Piece(piece_id, idle)
-    piece.reset(0)  # initialize physics with default position
+    # initialise physics position directly
     idle.reset(Command(0, piece.id, "idle", [cell]))  # set actual position
     return piece
 

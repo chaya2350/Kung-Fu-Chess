@@ -3,6 +3,7 @@ import pathlib
 import cv2
 import numpy as np
 
+
 class Img:
     def __init__(self):
         self.img = None
@@ -10,7 +11,7 @@ class Img:
     def read(self, path: str | pathlib.Path,
              size: tuple[int, int] | None = None,
              keep_aspect: bool = False,
-             interpolation: int = cv2.INTER_AREA) -> "Img":
+             interpolation: int = cv2.INTER_AREA):
         """
         Load `path` into self.img and **optionally resize**.
 
@@ -105,63 +106,6 @@ class Img:
 def close_all_img_windows():
     cv2.destroyAllWindows()
 
+
 def draw_rect(img, x1, y1, x2, y2, color):
     cv2.rectangle(img, (x1, y1), (x2, y2), color, 2)
-
-#
-# # mock_img.py
-# from __future__ import annotations
-# import pathlib
-# import cv2           # only for the flag constants – no images are loaded
-#
-# class Img:
-#     """
-#     Test-double for Img that records operations instead of manipulating pixels.
-#     Each instance keeps its own trajectory; nothing is written to disk or GPU.
-#     """
-#
-#     # ---------- construction ----------
-#     def __init__(self) -> None:
-#         super().__init__()        # sets self.img = None
-#         self.W: int | None = None
-#         self.H: int | None = None
-#         self.path: str | None = None
-#         self.traj: list[tuple[int, int]] = []            # every draw_on(x,y)
-#         self.txt_traj: list[tuple[tuple[int, int], str]] = []  # ((x,y), txt)
-#
-#     # ---------- API stubs ----------
-#     def read(
-#         self,
-#         path: str | pathlib.Path,
-#         size: tuple[int, int] | None = None,
-#         keep_aspect: bool = False,
-#         interpolation: int = cv2.INTER_AREA,
-#     ) -> "MockImg":
-#         """Mimic Img.read but skip decoding; just remember basic metadata."""
-#         self.path = str(path)
-#         if size:
-#             self.W, self.H = size          # caller supplied a target size
-#         else:
-#             self.W = self.H = None         # unknown / don’t care
-#         # leave self.img = None so any accidental pixel op crashes loudly
-#         return self                        # keeps chaining behaviour
-#
-#     def draw_on(self, other_img: "MockImg | Img", x: int, y: int) -> None:
-#         """Record the requested top-left coordinate."""
-#         self.traj.append((x, y))
-#
-#     def put_text(
-#         self,
-#         txt: str,
-#         x: int,
-#         y: int,
-#         font_size: float,
-#         color: tuple[int, int, int, int] = (255, 255, 255, 255),
-#         thickness: int = 1,
-#     ) -> None:
-#         """Remember text placement – no rendering."""
-#         self.txt_traj.append(((x, y), txt))
-#
-#     def show(self) -> None:       # type: ignore[override]
-#         """Deliberately a no-op in tests."""
-#         pass

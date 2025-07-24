@@ -16,7 +16,8 @@ class Piece:
         self.state = self.state.on_command(cmd, cell2piece)
 
     def reset(self, start_ms: int):
-        self.state.reset(Command(start_ms, self.id, "Idle", []))
+        cell = self.current_cell()
+        self.state.reset(Command(start_ms, self.id, "idle", [cell]))
 
     def update(self, now_ms: int):
         self.state = self.state.update(now_ms)

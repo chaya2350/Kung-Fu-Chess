@@ -8,6 +8,7 @@ from Piece import Piece
 from State import State
 from Physics import IdlePhysics, JumpPhysics
 from Graphics import Graphics
+from GraphicsFactory import MockImgFactory
 from img import Img
 
 
@@ -17,6 +18,8 @@ from img import Img
 
 PIECES_ROOT = pathlib.Path(__file__).parent.parent / "pieces"
 BOARD_CSV   = PIECES_ROOT / "board.csv"
+
+SPRITES_DIR = PIECES_ROOT / "BB" / "states" / "idle" / "sprites"
 
 
 def _blank_board_image(h: int, w: int):
@@ -35,10 +38,11 @@ def _make_board(cell_px: int = 32):
 
 def _build_graphics(cell_px: int = 32):
     """Return a Graphics instance with a single blank sprite."""
-    return Graphics(sprites_folder=pathlib.Path("."),
+    return Graphics(sprites_folder=SPRITES_DIR,
                     cell_size=(cell_px, cell_px),
                     loop=False,
-                    fps=1.0)
+                    fps=1.0,
+                    img_loader=MockImgFactory())
 
 
 def _simple_piece(code: str, cell: tuple[int, int], board: Board) -> Piece:

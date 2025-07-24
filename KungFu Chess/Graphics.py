@@ -1,19 +1,21 @@
 import pathlib
 from dataclasses import dataclass, field
 from typing import List, Dict, Tuple, Optional
-import copy
 from img import Img
+import copy
 from Command import Command
-
-
 
 class Graphics:
     def __init__(self,
                  sprites_folder: pathlib.Path,
                  cell_size: tuple[int, int],
+                 img_loader,
                  loop: bool = True,
                  fps: float = 6.0):
-                 
+
+        # injectable image loader for tests (defaults to Img().read)
+        self._img_loader = img_loader
+
         self.frames: list[Img] = self._load_sprites(sprites_folder, cell_size)
         self.loop, self.fps = loop, fps
         self.start_ms = 0
@@ -28,7 +30,7 @@ class Graphics:
     def _load_sprites(self, folder, cell_size):
         frames = []
         for p in sorted(folder.glob("*.png")):
-            frames.append(Img().read(p, size=cell_size, keep_aspect=True))
+            frames.append(self._img_loader(p, cell_size, keep_aspect=True))
         if not frames:
             raise ValueError(f"No frames found in {folder}")
 
@@ -47,6 +49,8 @@ class Graphics:
             self.cur_frame = min(frames_passed, len(self.frames) - 1)
 
     def get_img(self) -> Img:
+        if not self.frames:
+            raise ValueError("No frames loaded for animation.")
+        if self.cur_frame >= len(self.frames):
+            raise ValueError("Frame index out of range")
         return self.frames[self.cur_frame]
-
-
