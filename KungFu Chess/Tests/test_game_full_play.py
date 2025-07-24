@@ -36,7 +36,6 @@ def _load_game() -> Game:
     return Game(pieces, board)
 
 
-@pytest.mark.xfail(reason="Full gameplay requires new create_game behaviour not yet implemented")
 def test_game_move_and_capture():
     game = _load_game()
 
@@ -72,7 +71,6 @@ def test_game_move_and_capture():
     assert bp in game.pieces  # winner remains
 
 
-@pytest.mark.xfail(reason="Awaiting GameFactory integration")
 def test_game_win_condition():
     game = _load_game()
     # Remove Black king and verify win

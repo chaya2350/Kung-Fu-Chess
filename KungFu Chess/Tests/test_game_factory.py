@@ -5,6 +5,8 @@ import pathlib, pytest
 # is completed.
 
 from mock_img import MockImg
+from GraphicsFactory import MockImgFactory
+from GameFactory import create_game
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -18,9 +20,7 @@ PIECES_DIR = ROOT_DIR / "pieces"
 
 def test_create_game_builds_full_board():
     """create_game() should return a fully-initialised *Game* with 32 pieces."""
-    from GameFactory import create_game  # noqa: F401 – will fail if not implemented
-
-    game = create_game(PIECES_DIR)
+    game = create_game(PIECES_DIR, MockImgFactory())
 
     from Game import Game
     assert isinstance(game, Game)

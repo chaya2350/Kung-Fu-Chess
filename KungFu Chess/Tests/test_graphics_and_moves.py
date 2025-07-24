@@ -27,17 +27,13 @@ def test_graphics_animation_timing():
     # Reset at t=0
     gfx.reset(Command(0, "test", "idle", []))
     assert gfx.cur_frame == 0
+    num_frames = len(gfx.frames)
+    frame_duration = 1000 / gfx.fps
+    for i in range(num_frames):
+        gfx.update(i * frame_duration + frame_duration / 2)
+        assert gfx.cur_frame == i
 
-    # At t=50ms (half frame) - should still be frame 0
-    gfx.update(50)
-    assert gfx.cur_frame == 0
-
-    # At t=150ms - should be frame 1
-    gfx.update(150)
-    assert gfx.cur_frame == 1
-
-    # At t=350ms - should wrap back to frame 0 (loop=True)
-    gfx.update(350)
+    gfx.update(num_frames * frame_duration + frame_duration / 2)
     assert gfx.cur_frame == 0
 
 

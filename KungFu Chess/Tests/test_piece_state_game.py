@@ -10,7 +10,11 @@ from Physics import IdlePhysics, MovePhysics, JumpPhysics
 from Graphics import Graphics
 from GraphicsFactory import MockImgFactory
 from img import Img
+from Moves import Moves
 
+ROOT_DIR = pathlib.Path(__file__).parent.parent
+PIECES_DIR = ROOT_DIR / "pieces"
+MOVES_FILE = PIECES_DIR / "pieces" / "QW" / "states" / "idle" / "moves.txt"
 
 def _blank_img(w: int = 8, h: int = 8):
     img = Img()
@@ -38,7 +42,7 @@ def _make_piece(piece_id: str, cell: tuple[int, int], board: Board) -> Piece:
 
     gfx = _graphics()
 
-    idle = State(moves=None, graphics=gfx, physics=idle_phys)
+    idle = State(moves=Moves(MOVES_FILE, (8,8)), graphics=gfx, physics=idle_phys)
     move = State(moves=None, graphics=gfx, physics=move_phys)
     jump = State(moves=None, graphics=gfx, physics=jump_phys)
 
