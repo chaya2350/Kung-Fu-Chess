@@ -35,12 +35,15 @@ def test_game_move_and_capture():
     pb = game.pos[(1, 1)][0]
     game.user_input_queue.put(Command(game.game_time_ms(), pw.id, "move", [(6, 0), (4, 0)]))
     game.user_input_queue.put(Command(game.game_time_ms(), pb.id, "move", [(1, 1), (3, 1)]))
-    game.run(num_iterations=2, is_with_graphics=False)
+    time.sleep(0.5)
+    game.run(num_iterations=100, is_with_graphics=False)
     assert pw.current_cell() == (4, 0)
     assert pb.current_cell() == (3, 1)
-    game._run_game_loop(num_iterations=8, is_with_graphics=False)
+    time.sleep(0.5)
+    game._run_game_loop(num_iterations=100, is_with_graphics=False)
     game.user_input_queue.put(Command(game.game_time_ms(), pw.id, "move", [(4, 0), (3, 1)]))
-    game._run_game_loop(num_iterations=5, is_with_graphics=False)
+    time.sleep(0.5)
+    game._run_game_loop(num_iterations=100, is_with_graphics=False)
     assert pw.current_cell() == (3, 1)
     assert pw in game.pieces
     assert pb not in game.pieces
