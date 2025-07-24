@@ -32,8 +32,7 @@ def create_game(pieces_root: str | pathlib.Path, img_factory) -> Game:
 
     from GraphicsFactory import GraphicsFactory
     gfx_factory = GraphicsFactory(img_factory)
-    pf = PieceFactory(board, graphics_factory=gfx_factory)
-    pf.generate_library(pieces_root)
+    pf = PieceFactory(board, pieces_root, graphics_factory=gfx_factory)
 
     pieces = []
     with board_csv.open() as f:

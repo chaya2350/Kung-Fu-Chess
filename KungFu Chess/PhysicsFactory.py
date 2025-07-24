@@ -12,7 +12,7 @@ class PhysicsFactory:
         speed = cfg.get("speed_m_per_sec", 0.0)
 
         name_l = state_name.lower()
-        if name_l == "move" or name_l.endswith("_move"):
+        if name_l == "move":
             cls = MovePhysics
         elif name_l == "jump":
             cls = JumpPhysics

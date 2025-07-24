@@ -19,8 +19,8 @@ class BasePhysics(ABC):  # Interface/base class
         self._start_cell = None
         self._end_cell   = None
         self._curr_pos_m   = None
-        
-        self.param  = param
+
+        self.param = param
         self._start_ms   = 0
 
     # ------------------------------------------------------------------
@@ -63,7 +63,7 @@ class IdlePhysics(BasePhysics):
     def update(self, now_ms: int):
         return None
 
-    def can_capture(self) -> bool: 
+    def can_capture(self) -> bool:
         return False
 
     def is_movement_blocker(self) -> bool:
@@ -74,6 +74,8 @@ class MovePhysics(BasePhysics):
     def __init__(self, board: Board, param: float = 1.0):
         super().__init__(board, param)
         self._speed_m_s = param
+        if self._speed_m_s == 0:
+            raise ValueError("_speed_m_s is 0")
 
     def reset(self, cmd: Command):
         self._start_cell  = cmd.params[0]
@@ -87,10 +89,11 @@ class MovePhysics(BasePhysics):
         self._movement_vector = self._movement_vector / self._movement_vector_length
         self._duration_s = self._movement_vector_length / self._speed_m_s
 
+
     def update(self, now_ms: int):
         seconds_passed = (now_ms - self._start_ms) / 1000
         self._curr_pos_m = np.array(self.board.cell_to_m(self._start_cell)) + self._movement_vector * seconds_passed * self._speed_m_s
-        
+
         if seconds_passed >= self._duration_s:
             return Command(now_ms, None, "done", [self._end_cell])
 
@@ -120,6 +123,37 @@ class StaticTemporaryPhysics(BasePhysics):
         return None
 
 class JumpPhysics(StaticTemporaryPhysics):
+    def reset(self, cmd: Command):
+        """Teleport the piece to its destination cell and start the cooldown timer.
+
+        The *jump* command is expected to contain two cells in `cmd.params` –
+        the source cell (where the jump starts) and the destination cell
+        (where the piece should land).  Some callers/tests, however, might
+        still send only a single cell.  We therefore handle both cases.
+
+        Because a jump in KungFu-Chess is meant to be instantaneous from the
+        point of view of board occupancy (the piece disappears from the
+        source square and immediately shows up on the destination square),
+        we update the internal position right away to the *destination* cell.
+        """
+
+        # Default behaviour – if only one coordinate is supplied behave the
+        # same as the parent implementation (static on that square).
+        if len(cmd.params) == 1:
+            super().reset(cmd)
+            return
+
+        # When two coordinates are provided treat it as a true jump
+        self._start_cell, self._end_cell = cmd.params[0], cmd.params[1]
+
+        # Land instantly on the destination square.
+        self._curr_pos_m = self.board.cell_to_m(self._end_cell)
+        self._start_ms  = cmd.timestamp
+
+        # Note: `update()` from StaticTemporaryPhysics will use
+        # `self.duration_s` to emit the "done" event after the cooldown
+        # period, allowing the state-machine to transition afterwards.
+
     def can_be_captured(self) -> bool:
         return False
 

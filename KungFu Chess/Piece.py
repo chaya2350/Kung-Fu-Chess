@@ -5,9 +5,8 @@ from Command import Command
 import cv2
 from typing import Callable, Dict, List, Tuple
 
-
 class Piece:
-    def __init__(self, piece_id: str, init_state: State):
+    def __init__(self, piece_id: str, init_state):
         self.id = piece_id
         self.state = init_state
 

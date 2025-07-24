@@ -16,7 +16,7 @@ class State:
     def __init__(self, moves: Optional[Moves], graphics: Graphics, physics: BasePhysics):
         self.moves: Optional[Moves] = moves
         self.graphics, self.physics = graphics, physics
-        self.transitions: Dict[str, "State"] = {}
+        self.transitions: Dict[str, State] = {}
         self.name = None
 
     def __repr__(self):
@@ -47,7 +47,8 @@ class State:
                 raise ValueError(f"source cell {src_cell} is not the current cell {self.physics.get_curr_cell()}")
             
             if not self.moves.is_valid(src_cell, dst_cell, cell2piece):
-                raise ValueError(f"Invalid move: {src_cell} → {dst_cell}")
+                logger.debug(f"Invalid move: {src_cell} → {dst_cell}")
+                return self
             
         logger.debug("[TRANSITION] %s: %s ? %s", cmd.type, self, nxt)
 
