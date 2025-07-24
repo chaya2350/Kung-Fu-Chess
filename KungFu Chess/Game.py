@@ -138,9 +138,9 @@ class Game:
                 x1 = c * self.board.cell_W_pix
                 y2 = y1 + self.board.cell_H_pix - 1;
                 x2 = x1 + self.board.cell_W_pix - 1
-                color = (0, 255, 0, 255) if player == 1 else (255, 0, 0, 255)
-                self.curr_board.img.put_text('O', x1, y1, font_size=(1 + self.board.cell_H_pix // 3), color=color,
-                                             thickness=(1 + self.board.cell_H_pix // 7))
+                color = (0, 255, 0) if player == 1 else (255, 0, 0)
+                draw_rect(self.curr_board.img.img, x1, y1, x2, y2, color)
+
                 # only print if moved
                 prev = getattr(self, last)
                 if prev != (r, c):

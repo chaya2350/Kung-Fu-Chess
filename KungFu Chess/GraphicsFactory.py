@@ -7,6 +7,8 @@ from mock_img import MockImg
 
 class ImgFactory:
     def __call__(self, *args, **kwargs):
+        # f = img_factory()
+        # img = f(path, size, keep_aspect)
         # Accept both positional and keyword keep_aspect
         path = args[0]
         size = args[1]

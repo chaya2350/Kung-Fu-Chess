@@ -23,6 +23,10 @@ def _blank_board():
     return Board(cell_px, cell_px, 8, 8, img)
 
 
+# interface image_loader
+# real_loader: image_loader
+# fake_loader: image_loader
+
 def test_game_move_and_capture():
     game = create_game("../pieces", MockImgFactory())
     game._time_factor = 1000000000

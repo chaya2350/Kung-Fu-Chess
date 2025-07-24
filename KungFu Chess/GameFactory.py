@@ -4,7 +4,7 @@ from img import Img
 from PieceFactory import PieceFactory
 from Game import Game
 
-CELL_PX = 32
+CELL_PX = 64
 
 
 def create_game(pieces_root: str | pathlib.Path, img_factory) -> Game:
