@@ -18,7 +18,7 @@ class MockImgFactory(ImgFactory):
         path = args[0]
         size = args[1]
         keep_aspect = kwargs.get("keep_aspect", args[2] if len(args) >= 3 else False)
-        return MockImg.read(path, size, keep_aspect)
+        return MockImg().read(path, size, keep_aspect)
 
 
 class GraphicsFactory:
