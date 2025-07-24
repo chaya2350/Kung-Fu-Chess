@@ -2,13 +2,8 @@
 
 #include "Board.hpp"
 #include "Command.hpp"
-#if __has_include(<optional>)
-#  include <optional>
-namespace kfc_std = std;
-#else
-#  include <utility>
-namespace kfc_std { template<typename T> class optional { bool h=false; T v{}; public: optional()=default; optional(T val):h(true),v(std::move(val)){} operator bool() const {return h;} T& operator*(){return v;} const T& operator*() const {return v;} }; struct nullopt_t{}; constexpr nullopt_t nullopt{}; }
-#endif
+#include "Common.hpp"
+#include <optional>
 #include <cmath>
 
 class BasePhysics {
@@ -19,7 +14,7 @@ public:
     virtual ~BasePhysics() = default;
 
     virtual void reset(const Command& cmd) = 0;
-    virtual kfc_std::optional<Command> update(int now_ms) = 0;
+    virtual std::optional<Command> update(int now_ms) = 0;
 
     std::pair<float,float> get_pos_m() const { return curr_pos_m; }
     std::pair<int,int> get_pos_pix() const { return board.m_to_pix(curr_pos_m); }
@@ -58,7 +53,7 @@ public:
         curr_pos_m = board.cell_to_m(start_cell);
         start_ms = cmd.timestamp;
     }
-    kfc_std::optional<Command> update(int) override { return kfc_std::nullopt; }
+    std::optional<Command> update(int) override { return std::nullopt; }
 
     bool can_capture() const override { return false; }
     bool is_movement_blocker() const override { return true; }
@@ -84,16 +79,16 @@ public:
         duration_s = movement_len / speed_m_s;
     }
 
-    kfc_std::optional<Command> update(int now_ms) override {
+    std::optional<Command> update(int now_ms) override {
         double seconds = (now_ms - start_ms) / 1000.0;
         if(seconds >= duration_s) {
             curr_pos_m = board.cell_to_m(end_cell);
-            return Command{now_ms, "", "done", {}};
+            return std::optional<Command>{Command{now_ms, "", "done", {}}};
         }
         double ratio = seconds / duration_s;
         curr_pos_m = { board.cell_to_m(start_cell).first + movement_vec.first * ratio,
                        board.cell_to_m(start_cell).second + movement_vec.second * ratio };
-        return kfc_std::nullopt;
+        return std::nullopt;
     }
 
 private:
@@ -113,12 +108,12 @@ public:
         start_ms   = cmd.timestamp;
     }
 
-    kfc_std::optional<Command> update(int now_ms) override {
+    std::optional<Command> update(int now_ms) override {
         double seconds = (now_ms - start_ms) / 1000.0;
         if(seconds >= param) {
-            return Command{now_ms, "", "done", {}};
+            return std::optional<Command>{Command{now_ms, "", "done", {}}};
         }
-        return kfc_std::nullopt;
+        return std::nullopt;
     }
 
     bool is_movement_blocker() const override { return true; }

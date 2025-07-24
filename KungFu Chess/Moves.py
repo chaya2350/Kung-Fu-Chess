@@ -66,7 +66,7 @@ class Moves:
 
         return dr, dc, tag
 
-    def is_dst_cell_valid(self, dr, dc, dst_has_piece):
+    def is_dst_cell_valid(self, dr, dc, dst_pieces, my_color):
         """Check if a move is valid based on the destination cell state."""
         # If the relative move isn't in the table – it's invalid
         if (dr, dc) not in self.moves:
@@ -77,32 +77,34 @@ class Moves:
             return True
 
         if move_tag == "capture":
-            return dst_has_piece
+            return dst_pieces is not None and len([p for p in dst_pieces if p.id[1] != my_color]) > 0
 
         if move_tag == "non_capture":
-            return not dst_has_piece
+            return dst_pieces is None
 
         return False  # Invalid tag
 
-    def is_valid(self, src_cell, dst_cell, cell2piece, is_need_clear_path):
+    def is_valid(self, src_cell, dst_cell, cell2piece, is_need_clear_path, my_color):
         # Check board boundaries
         if not (0 <= dst_cell[0] < self.dims[0] and 0 <= dst_cell[1] < self.dims[1]):
             return False
 
         dr, dc = dst_cell[0] - src_cell[0], dst_cell[1] - src_cell[1]
-        dst_has_piece = cell2piece.get(dst_cell) is not None
-        if not self.is_dst_cell_valid(dr, dc, dst_has_piece):
+        if not self.is_dst_cell_valid(dr, dc, cell2piece.get(dst_cell), my_color):
             return False
 
-        if is_need_clear_path and not self._path_is_clear(src_cell, dst_cell, cell2piece):
+        if is_need_clear_path and not self._path_is_clear(src_cell, dst_cell, cell2piece, my_color):
             return False
 
         return True
 
-    def _path_is_clear(self, src_cell, dst_cell, cell2piece):
+    def _path_is_clear(self, src_cell, dst_cell, cell2piece_all, my_color):
         """Check if there are any pieces blocking the path between src and dst."""
         dr = dst_cell[0] - src_cell[0]
         dc = dst_cell[1] - src_cell[1]
+        cell2piece = \
+            {k: v for k, v in cell2piece_all.items() \
+             if any(piece.id[1] == my_color for piece in v)}
 
         if dst_cell in cell2piece:
             print(f"Path not clear at {dst_cell}")

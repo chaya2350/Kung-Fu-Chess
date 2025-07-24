@@ -4,12 +4,7 @@
 #include <string>
 #include <unordered_set>
 #include <utility>
-
-struct PairHash {
-    size_t operator()(const std::pair<int,int>& p) const noexcept {
-        return static_cast<size_t>(p.first) * 31u + static_cast<size_t>(p.second);
-    }
-};
+#include "Common.hpp"
 
 class Moves {
 public:

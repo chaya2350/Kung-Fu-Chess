@@ -13,10 +13,8 @@ class Piece:
 
     def on_command(self, cmd: Command, cell2piece: Dict[Tuple[int, int], List[Piece]]):
         """Process a command and potentially transition to a new state."""
-        my_color_cell2piece = \
-            {k: v for k, v in cell2piece.items() \
-             if any(piece.id[1] == self.id[1] for piece in v)}
-        self.state = self.state.on_command(cmd, my_color_cell2piece)
+        my_color = self.id[1]
+        self.state = self.state.on_command(cmd, cell2piece, my_color)
 
     def reset(self, start_ms: int):
         cell = self.current_cell()

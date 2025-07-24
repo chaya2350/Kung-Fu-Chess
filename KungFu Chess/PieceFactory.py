@@ -64,7 +64,9 @@ class PieceFactory:
             moves = Moves(moves_path, board_size) if moves_path.exists() else None
             graphics = self.graphics_factory.load(state_dir / "sprites",
                                                   cfg.get("graphics", {}), cell_px)
-            physics = self.physics_factory.create((0, 0), name, cfg.get("physics", {}))
+            physics_cfg = cfg.get("physics", {})
+            physics = self.physics_factory.create((0, 0), name, physics_cfg)
+            physics.do_i_need_clear_path = cfg.get("need_clear_path", True)
 
             st = State(moves, graphics, physics)
             st.name = name

@@ -17,11 +17,14 @@ class BasePhysics(ABC):  # Interface/base class
         self.board = board
 
         self._start_cell = None
-        self._end_cell   = None
-        self._curr_pos_m   = None
+        self._end_cell = None
+        self._curr_pos_m = None
 
         self.param = param
-        self._start_ms   = 0
+        self._start_ms = 0
+        self.do_i_need_clear_path = True
+
+
 
     # ------------------------------------------------------------------
     @abstractmethod
@@ -49,9 +52,14 @@ class BasePhysics(ABC):  # Interface/base class
         return self._start_ms
 
     def can_be_captured(self) -> bool: return True
+
     def can_capture(self) -> bool:     return True
+
     def is_movement_blocker(self) -> bool: return False
-    def is_need_clear_path(self) -> bool: return True
+
+    def is_need_clear_path(self) -> bool:
+        return self.do_i_need_clear_path
+
 
 class IdlePhysics(BasePhysics):
 
@@ -69,26 +77,22 @@ class IdlePhysics(BasePhysics):
     def is_movement_blocker(self) -> bool:
         return True
 
+
 class MovePhysics(BasePhysics):
 
     def __init__(self, board: Board, param: float = 1.0):
         super().__init__(board, param)
         self._speed_m_s = param
-        self.is_need_clear_path = True
         if self._speed_m_s == 0:
             raise ValueError("_speed_m_s is 0")
         if self._speed_m_s < 0:
             self._speed_m_s = abs(self._speed_m_s)
-            self.is_need_clear_path = False
-
-    def is_need_clear_path(self):
-        return self.is_need_clear_path
 
     def reset(self, cmd: Command):
-        self._start_cell  = cmd.params[0]
-        self._end_cell  = cmd.params[1]
+        self._start_cell = cmd.params[0]
+        self._end_cell = cmd.params[1]
         self._curr_pos_m = self.board.cell_to_m(self._start_cell)
-        self._start_ms  = cmd.timestamp
+        self._start_ms = cmd.timestamp
         start_pos = np.array(self.board.cell_to_m(self._start_cell))
         end_pos = np.array(self.board.cell_to_m(self._end_cell))
         self._movement_vector = end_pos - start_pos
@@ -96,10 +100,10 @@ class MovePhysics(BasePhysics):
         self._movement_vector = self._movement_vector / self._movement_vector_length
         self._duration_s = self._movement_vector_length / self._speed_m_s
 
-
     def update(self, now_ms: int):
         seconds_passed = (now_ms - self._start_ms) / 1000
-        self._curr_pos_m = np.array(self.board.cell_to_m(self._start_cell)) + self._movement_vector * seconds_passed * self._speed_m_s
+        self._curr_pos_m = np.array(
+            self.board.cell_to_m(self._start_cell)) + self._movement_vector * seconds_passed * self._speed_m_s
 
         if seconds_passed >= self._duration_s:
             return Command(now_ms, None, "done", [self._end_cell])
@@ -111,6 +115,7 @@ class MovePhysics(BasePhysics):
 
     def get_pos_pix(self):
         return super().get_pos_pix()
+
 
 class StaticTemporaryPhysics(BasePhysics):
     def __init__(self, board: Board, param: float = 1.0):
@@ -128,6 +133,7 @@ class StaticTemporaryPhysics(BasePhysics):
             return Command(now_ms, None, "done", [self._end_cell])
 
         return None
+
 
 class JumpPhysics(StaticTemporaryPhysics):
     def reset(self, cmd: Command):
@@ -155,7 +161,7 @@ class JumpPhysics(StaticTemporaryPhysics):
 
         # Land instantly on the destination square.
         self._curr_pos_m = self.board.cell_to_m(self._end_cell)
-        self._start_ms  = cmd.timestamp
+        self._start_ms = cmd.timestamp
 
         # Note: `update()` from StaticTemporaryPhysics will use
         # `self.duration_s` to emit the "done" event after the cooldown
@@ -167,6 +173,5 @@ class JumpPhysics(StaticTemporaryPhysics):
 
 class RestPhysics(StaticTemporaryPhysics):
     def can_capture(self) -> bool: return False
+
     def is_movement_blocker(self) -> bool: return True
-
-
