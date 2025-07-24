@@ -84,7 +84,8 @@ class Game:
         for p in self.pieces:
             self.pos[p.current_cell()].append(p)
 
-    def _run_game_loop(self, timeout=None, is_with_graphics=True):
+    def _run_game_loop(self, num_iterations=None, is_with_graphics=True):
+        it_counter = 0
         while not self._is_win():
             now = self.game_time_ms()
 
@@ -104,16 +105,18 @@ class Game:
             self._resolve_collisions()
 
             # for testing
-            if timeout is not None and now > timeout:
-                return
+            if num_iterations is not None:
+                it_counter += 1
+                if num_iterations <= it_counter:
+                    return
 
-    def run(self, timeout=None, is_with_graphics=True):
+    def run(self, num_iterations=None, is_with_graphics=True):
         self.start_user_input_thread()
         start_ms = self.START_NS
         for p in self.pieces:
             p.reset(start_ms)
 
-        self._run_game_loop(timeout, is_with_graphics)
+        self._run_game_loop(num_iterations, is_with_graphics)
 
         self._announce_win()
         close_all_img_windows()
