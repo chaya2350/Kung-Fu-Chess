@@ -46,7 +46,7 @@ class State:
             if src_cell != self.physics.get_curr_cell():
                 raise ValueError(f"source cell {src_cell} is not the current cell {self.physics.get_curr_cell()}")
             
-            if not self.moves.is_valid(src_cell, dst_cell, cell2piece):
+            if not self.moves.is_valid(src_cell, dst_cell, cell2piece, self.physics.is_need_clear_path()):
                 logger.debug(f"Invalid move: {src_cell} → {dst_cell}")
                 return self
             

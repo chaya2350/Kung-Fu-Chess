@@ -115,10 +115,8 @@ class Game:
 
     def _draw(self):
         self.curr_board = self.clone_board()
-        self.pos.clear()
         for p in self.pieces:
             p.draw_on_board(self.curr_board, now_ms=self.game_time_ms())
-            self.pos[p.current_cell()] = p
 
         # overlay both players' cursors, but only log on change
         if self.kp1 and self.kp2:
@@ -153,9 +151,8 @@ class Game:
         mover.on_command(cmd, self.pos)
 
     def _resolve_collisions(self):
-        occupied: Dict[Tuple[int,int], List[Piece]] = {}
-        for p in self.pieces:
-            occupied.setdefault(p.current_cell(), []).append(p)
+        self._update_cell2piece_map()
+        occupied = self.pos
 
         for cell, plist in occupied.items():
             if len(plist) < 2:
@@ -172,7 +169,7 @@ class Game:
             # Remove every other piece that *can be captured*
             for p in plist:
                 if p is winner:
-                    continue
+                    p.on_command(Command(0, p.id, "done", [cell]), self.pos)
                 if p.state.can_be_captured():
                     self.pieces.remove(p)
 

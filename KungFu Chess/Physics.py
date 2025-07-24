@@ -51,7 +51,7 @@ class BasePhysics(ABC):  # Interface/base class
     def can_be_captured(self) -> bool: return True
     def can_capture(self) -> bool:     return True
     def is_movement_blocker(self) -> bool: return False
-
+    def is_need_clear_path(self) -> bool: return True
 
 class IdlePhysics(BasePhysics):
 
@@ -74,8 +74,15 @@ class MovePhysics(BasePhysics):
     def __init__(self, board: Board, param: float = 1.0):
         super().__init__(board, param)
         self._speed_m_s = param
+        self.is_need_clear_path = True
         if self._speed_m_s == 0:
             raise ValueError("_speed_m_s is 0")
+        if self._speed_m_s < 0:
+            self._speed_m_s = abs(self._speed_m_s)
+            self.is_need_clear_path = False
+
+    def is_need_clear_path(self):
+        return self.is_need_clear_path
 
     def reset(self, cmd: Command):
         self._start_cell  = cmd.params[0]
