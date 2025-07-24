@@ -14,11 +14,9 @@ class Board:
 
     # convenience, not required by dataclass
     def clone(self) -> "Board":
-        new_img = Img()
-        new_img.img = self.img.img.copy()
         return Board(self.cell_H_pix, self.cell_W_pix,
                      self.W_cells,    self.H_cells,
-                     new_img)
+                     self.img.copy())
 
     def show(self):
         self.img.show()

@@ -19,6 +19,9 @@ class MockImg(Img):
         
         self.W = self.H = size[0], size[1]
         return self  # chain-call compatible
+    
+    def copy(self):
+        return self
 
     def draw_on(self, other, x, y):
         MockImg.traj.append((x, y))

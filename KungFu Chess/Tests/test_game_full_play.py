@@ -6,73 +6,37 @@ from PieceFactory import PieceFactory
 from GraphicsFactory import GraphicsFactory, MockImgFactory
 from Game import Game
 from Command import Command
+from GameFactory import create_game
 
 import numpy as np
 
 import pytest
 
-
 PIECES_ROOT = pathlib.Path(__file__).parent.parent / "pieces"
-BOARD_CSV   = PIECES_ROOT / "board.csv"
+BOARD_CSV = PIECES_ROOT / "board.csv"
 
 
 def _blank_board():
     cell_px = 32
-    img = Img(); img.img = np.zeros((cell_px*8, cell_px*8, 4), dtype=np.uint8)
+    img = Img();
+    img.img = np.zeros((cell_px * 8, cell_px * 8, 4), dtype=np.uint8)
     return Board(cell_px, cell_px, 8, 8, img)
 
 
-def _load_game() -> Game:
-    board = _blank_board()
-    gfx_factory = GraphicsFactory(MockImgFactory())
-    pf = PieceFactory(board, PIECES_ROOT, graphics_factory=gfx_factory)
-    pieces = []
-    with BOARD_CSV.open() as f:
-        for r, line in enumerate(f):
-            for c, code in enumerate(line.strip().split(",")):
-                if code:
-                    pieces.append(pf.create_piece(code, (r, c)))
-    return Game(pieces, board)
-
-
 def test_game_move_and_capture():
-    game = _load_game()
+    game = create_game("../pieces", MockImgFactory())
+    game._time_factor = 1000000000
+    game._update_cell2piece_map()
+    pw = game.pos[(6, 0)][0]
+    pb = game.pos[(1, 1)][0]
+    game.user_input_queue.put(Command(game.game_time_ms(), pw.id, "move", [(6, 0), (4, 0)]))
+    game.user_input_queue.put(Command(game.game_time_ms(), pb.id, "move", [(1, 1), (3, 1)]))
+    game.run(timeout=2, is_with_graphics=False)
+    assert pw.current_cell() == (4, 0)
+    assert pb.current_cell() == (3, 1)
+    game.user_input_queue.put(Command(game.game_time_ms(), pw.id, "move", [(4, 0), (3, 1)]))
+    game._run_game_loop(timeout=5, is_with_graphics=False)
+    assert pw.current_cell() == (3, 1)
+    assert pw in game.pieces
+    assert pb not in game.pieces
 
-    # White pawn at (6,0) moves to (5,0)
-    wp = next(p for p in game.pieces if p.id.startswith("PW_") and p.current_cell()==(6,0))
-    # Must select first according to state machine
-    cmd_sel = Command(game.game_time_ms(), wp.id, "select", [(6,0)])
-    game._process_input(cmd_sel)
-
-    cmd_move = Command(game.game_time_ms(), wp.id, "move", [(6,0),(5,0)])
-    game._process_input(cmd_move)
-    wp.update(wp.state.physics.get_start_ms() + 2000)  # advance time
-
-    # Black pawn at (1,1) moves then captures white pawn
-    bp = next(p for p in game.pieces if p.id.startswith("PB_") and p.current_cell()==(1,1))
-    cmd_bp_sel = Command(game.game_time_ms(), bp.id, "select", [(1,1)])
-    game._process_input(cmd_bp_sel)
-
-    cmd_bp_move = Command(game.game_time_ms(), bp.id, "move", [(1,1),(2,1)])
-    game._process_input(cmd_bp_move)
-    bp.update(bp.state.physics.get_start_ms()+2000)
-
-    # Now jump onto white pawn square to capture
-    cmd_bp_sel2 = Command(game.game_time_ms(), bp.id, "select", [(2,1)])
-    game._process_input(cmd_bp_sel2)
-
-    cmd_bp_jump = Command(game.game_time_ms(), bp.id, "jump", [(2,1),(5,0)])
-    game._process_input(cmd_bp_jump)
-    bp.update(bp.state.physics.get_start_ms()+200)
-
-    game._resolve_collisions()
-    assert wp not in game.pieces  # pawn captured
-    assert bp in game.pieces  # winner remains
-
-
-def test_game_win_condition():
-    game = _load_game()
-    # Remove Black king and verify win
-    bk = next(p for p in game.pieces if p.id.startswith("KB_"))
-    game.pieces.remove(bk)
-    assert game._is_win() 

@@ -56,7 +56,12 @@ class Img:
             print(f"[DEBUG] Resized {path} to {self.img.shape}")
 
         return self
-
+    
+    def copy(self):
+        new_img = Img()
+        new_img.img = self.img.copy()
+        return new_img
+    
     def draw_on(self, other_img, x, y):
         if self.img is None or other_img.img is None:
             raise ValueError("Both images must be loaded before drawing.")

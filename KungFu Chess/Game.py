@@ -2,9 +2,9 @@ import queue, threading, time, math, logging
 from typing import List, Dict, Tuple, Optional, Set
 from collections import defaultdict
 
-from Board   import Board
+from Board import Board
 from Command import Command
-from Piece   import Piece
+from Piece import Piece
 from img import Img, close_all_img_windows, draw_rect
 
 from KeyboardInput import KeyboardProcessor, KeyboardProducer
@@ -12,20 +12,23 @@ from KeyboardInput import KeyboardProcessor, KeyboardProducer
 # set up a module-level logger – real apps can configure handlers/levels
 logger = logging.getLogger(__name__)
 
+
 class InvalidBoard(Exception): ...
+
 
 class Game:
     def __init__(self, pieces: List[Piece], board: Board):
         if not self._validate(pieces):
             raise InvalidBoard("missing kings")
-        self.pieces           = pieces
-        self.board            = board
-        self.START_NS         = time.monotonic_ns()
-        self.user_input_queue = queue.Queue()          # thread-safe
-        
+        self.pieces = pieces
+        self.board = board
+        self.START_NS = time.monotonic_ns()
+        self._time_factor = 1  # for tests
+        self.user_input_queue = queue.Queue()  # thread-safe
+
         # lookup tables ---------------------------------------------------
-        self.pos            : Dict[Tuple[int, int], List[Piece]] = defaultdict(list)
-        self.piece_by_id    : Dict[str, Piece] = {p.id: p for p in pieces}
+        self.pos: Dict[Tuple[int, int], List[Piece]] = defaultdict(list)
+        self.piece_by_id: Dict[str, Piece] = {p.id: p for p in pieces}
 
         self.selected_id_1: Optional[str] = None
         self.selected_id_2: Optional[str] = None
@@ -34,17 +37,13 @@ class Game:
 
         # keyboard helpers ---------------------------------------------------
         self.keyboard_processor: Optional[KeyboardProcessor] = None
-        self.keyboard_producer : Optional[KeyboardProducer]  = None
+        self.keyboard_producer: Optional[KeyboardProducer] = None
 
     def game_time_ms(self) -> int:
-        return (time.monotonic_ns() - self.START_NS) // 1_000_000
+        return self._time_factor * (time.monotonic_ns() - self.START_NS) // 1_000_000
 
     def clone_board(self) -> Board:
-        img_copy = Img()
-        img_copy.img = self.board.img.img.copy()
-        return Board(self.board.cell_H_pix, self.board.cell_W_pix,
-                     self.board.W_cells,    self.board.H_cells,
-                     img_copy)
+        return self.board.clone()
 
     def start_user_input_thread(self):
 
@@ -85,27 +84,36 @@ class Game:
         for p in self.pieces:
             self.pos[p.current_cell()].append(p)
 
-    def run(self):
-        self.start_user_input_thread()
-        start_ms = self.game_time_ms()
-        for p in self.pieces:
-            p.reset(start_ms)
-
+    def _run_game_loop(self, timeout=None, is_with_graphics=True):
         while not self._is_win():
             now = self.game_time_ms()
 
             for p in self.pieces:
                 p.update(now)
-            
+
             self._update_cell2piece_map()
 
             while not self.user_input_queue.empty():
                 cmd: Command = self.user_input_queue.get()
                 self._process_input(cmd)
 
-            self._draw()
-            self._show()
+            if is_with_graphics:
+                self._draw()
+                self._show()
+
             self._resolve_collisions()
+
+            # for testing
+            if timeout is not None and now > timeout:
+                return
+
+    def run(self, timeout=None, is_with_graphics=True):
+        self.start_user_input_thread()
+        start_ms = self.START_NS
+        for p in self.pieces:
+            p.reset(start_ms)
+
+        self._run_game_loop(timeout, is_with_graphics)
 
         self._announce_win()
         close_all_img_windows()
@@ -121,15 +129,18 @@ class Game:
         # overlay both players' cursors, but only log on change
         if self.kp1 and self.kp2:
             for player, kp, last in (
-                (1, self.kp1, 'last_cursor1'),
-                (2, self.kp2, 'last_cursor2')
+                    (1, self.kp1, 'last_cursor1'),
+                    (2, self.kp2, 'last_cursor2')
             ):
                 r, c = kp.get_cursor()
                 # draw rectangle
-                y1 = r * self.board.cell_H_pix; x1 = c * self.board.cell_W_pix
-                y2 = y1 + self.board.cell_H_pix - 1; x2 = x1 + self.board.cell_W_pix - 1
-                color = (0,255,0) if player==1 else (255,0,0)
-                draw_rect(self.curr_board.img.img, x1, y1, x2, y2, color)
+                y1 = r * self.board.cell_H_pix;
+                x1 = c * self.board.cell_W_pix
+                y2 = y1 + self.board.cell_H_pix - 1;
+                x2 = x1 + self.board.cell_W_pix - 1
+                color = (0, 255, 0, 255) if player == 1 else (255, 0, 0, 255)
+                self.curr_board.img.put_text('O', x1, y1, font_size=(1 + self.board.cell_H_pix // 3), color=color,
+                                             thickness=(1 + self.board.cell_H_pix // 7))
                 # only print if moved
                 prev = getattr(self, last)
                 if prev != (r, c):
@@ -176,7 +187,7 @@ class Game:
     def _validate(self, pieces):
         """Ensure both kings present and no two pieces share a cell."""
         has_white_king = has_black_king = False
-        seen_cells: dict[tuple[int,int], str] = {}
+        seen_cells: dict[tuple[int, int], str] = {}
         for p in pieces:
             cell = p.current_cell()
             if cell in seen_cells:
@@ -192,8 +203,8 @@ class Game:
         return has_white_king and has_black_king
 
     def _is_win(self) -> bool:
-        kings=[p for p in self.pieces if p.id.startswith(('KW','KB'))]
-        return len(kings)<2
+        kings = [p for p in self.pieces if p.id.startswith(('KW', 'KB'))]
+        return len(kings) < 2
 
     def _announce_win(self):
         text = 'Black wins!' if any(p.id.startswith('KB') for p in self.pieces) else 'White wins!'

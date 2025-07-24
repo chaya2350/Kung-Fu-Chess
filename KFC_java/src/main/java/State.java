@@ -1,5 +1,4 @@
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class State {
     public Moves moves;            // optional may be null
@@ -27,12 +26,31 @@ public class State {
 
     public State onCommand(Command cmd, java.util.Map<Moves.Pair, java.util.List<Piece>> cell2piece) {
         String key = cmd.type.toLowerCase();
-        if (transitions.containsKey(key) && (key.equals("done") || (cmd.params != null && !cmd.params.isEmpty()))) {
-            State next = transitions.get(key);
-            next.reset(cmd);
-            return next;
+
+        State next = transitions.get(key);
+        if (next == null) return this;   // no transition defined
+
+        // ─── additional legality checks for MOVE commands ────────────────
+        if ("move".equals(key) && moves != null && cmd.params != null && cmd.params.size() >= 2 && cell2piece != null) {
+            Moves.Pair src = (Moves.Pair) cmd.params.get(0);
+            Moves.Pair dst = (Moves.Pair) cmd.params.get(1);
+
+            // ensure the source matches the physics-reported current cell
+            if (!src.equals(physics.getCurrCell())) {
+                return this; // reject – stale source
+            }
+
+            java.util.Set<Moves.Pair> occupied = cell2piece.keySet();
+            int[] srcArr = new int[]{src.r, src.c};
+            int[] dstArr = new int[]{dst.r, dst.c};
+            if (!moves.isValid(srcArr, dstArr, occupied)) {
+                return this; // illegal destination / path blocked
+            }
         }
-        return this;
+
+        // -----------------------------------------------------------------
+        next.reset(cmd);
+        return next;
     }
 
     public State update(long nowMs) {

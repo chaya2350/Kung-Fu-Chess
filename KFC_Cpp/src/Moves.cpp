@@ -8,7 +8,12 @@
 Moves::Moves(const std::string& txt_path, std::pair<int,int> board_dims)
     : W(board_dims.first), H(board_dims.second) {
     std::ifstream in(txt_path);
-    if(!in) throw std::runtime_error("Cannot open moves file: " + txt_path);
+    if(!in) {
+        // Missing moves file is allowed (state may have no legal moves)
+        // Leave rel_moves empty – all validations will fail accordingly.
+        return;
+    }
+
     std::string line;
     while(std::getline(in, line)) {
         // Trim leading/trailing whitespace

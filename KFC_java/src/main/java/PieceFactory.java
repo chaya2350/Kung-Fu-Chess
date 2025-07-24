@@ -28,8 +28,33 @@ public class PieceFactory {
                 State st=new State(moves,gfx,phys); st.name=name; states.put(name, st);
             }
         }
-        // link idle transitions (simple default): idle -> move/jump if exist
-        State idle=states.get("idle"); if(idle!=null){ if(states.containsKey("move")) idle.setTransition("move", states.get("move")); if(states.containsKey("jump")) idle.setTransition("jump", states.get("jump")); }
+        // ─── apply per-piece transitions.csv overrides ───────────────
+        Path transCsv = pieceDir.resolve("transitions.csv");
+        if (Files.exists(transCsv)) {
+            List<String> lines = Files.readAllLines(transCsv);
+            for (String line : lines) {
+                String l = line.strip();
+                if (l.isEmpty() || l.startsWith("#") || l.toLowerCase().startsWith("from_state")) continue;
+                String[] parts = l.split(",");
+                if (parts.length < 3) continue;
+                String frm = parts[0].trim();
+                String event = parts[1].trim().toLowerCase();
+                String nxt = parts[2].trim();
+                State src = states.get(frm);
+                State dst = states.get(nxt);
+                if (src != null && dst != null) {
+                    src.setTransition(event, dst);
+                }
+            }
+        }
+
+        // fallback: basic idle transitions if none provided
+        State idle = states.get("idle");
+        if (idle != null && idle.getTransitions().isEmpty()) {
+            if (states.containsKey("move")) idle.setTransition("move", states.get("move"));
+            if (states.containsKey("jump")) idle.setTransition("jump", states.get("jump"));
+        }
+
         return idle;
     }
 
