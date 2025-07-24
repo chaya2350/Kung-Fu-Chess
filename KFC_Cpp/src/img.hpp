@@ -101,7 +101,7 @@ public:
     /**
      * Display the image in a window
      */
-    void show();
+    void show() const;
     
     /**
      * Get the underlying OpenCV Mat

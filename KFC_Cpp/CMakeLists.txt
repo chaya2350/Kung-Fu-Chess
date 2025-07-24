@@ -88,6 +88,8 @@ FetchContent_MakeAvailable(nlohmann_json)
 # Make json include directory available to all targets
 set(JSON_INCLUDE_DIR ${nlohmann_json_SOURCE_DIR}/single_include)
 
+# doctest header is vendored under src/doctest
+
 # ---------------------------------------------------------------------
 # Link libraries + includes for main executable
 # ---------------------------------------------------------------------

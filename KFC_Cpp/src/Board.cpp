@@ -30,7 +30,7 @@ Board Board::clone() const {
 // ---------------------------------------------------------------------------
 void Board::show() const {
     if (img.is_loaded()) {
-        img.show();
+        const_cast<Img&>(img).show();
     }
     // else: intentionally no-op – mirrors Python headless behaviour
 }
