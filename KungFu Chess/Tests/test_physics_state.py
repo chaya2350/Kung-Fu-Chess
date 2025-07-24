@@ -7,7 +7,12 @@ from img import Img
 from Physics import IdlePhysics, MovePhysics, JumpPhysics, RestPhysics
 from State import State
 from Piece import Piece
+# Adapt graphics builder to utilise mock image loader
 from Graphics import Graphics
+from GraphicsFactory import MockImgFactory
+
+PIECES_ROOT = pathlib.Path(__file__).parent.parent / "pieces"
+SPRITES_DIR = PIECES_ROOT / "BB" / "states" / "idle" / "sprites"
 
 # ---------------------------------------------------------------------------
 #                           HELPER BUILDERS
@@ -26,7 +31,11 @@ def _board(cells: int = 8):
 
 
 def _graphics():
-    return Graphics(sprites_folder=pathlib.Path("."), cell_size=(1, 1), loop=False, fps=1.0)
+    gfx = Graphics(sprites_folder=SPRITES_DIR, cell_size=(1, 1), loop=False, fps=1.0, img_loader=MockImgFactory())
+    # substitute minimal frame list
+    from mock_img import MockImg
+    gfx.frames = [MockImg()]
+    return gfx
 
 
 # ---------------------------------------------------------------------------
