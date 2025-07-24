@@ -1,4 +1,4 @@
-import tempfile, pathlib, numpy as np
+import pathlib, numpy as np
 
 from Board import Board
 from Moves import Moves
@@ -70,5 +70,5 @@ def test_moves_parsing_and_validation(tmp_path):
     assert not mv.is_dst_cell_valid(-1, 0, dst_has_piece=True)
 
     # move with tag "can both" (empty suffix) always allowed
-    assert mv.is_dst_cell_valid(0, 1, dst_has_piece=False)
-    assert mv.is_dst_cell_valid(0, 1, dst_has_piece=True) 
+    assert mv.is_dst_cell_valid(0, 1)
+    assert mv.is_dst_cell_valid(0, 1, dst_has_piece=True)

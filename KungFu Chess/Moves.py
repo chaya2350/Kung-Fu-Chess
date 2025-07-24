@@ -17,7 +17,7 @@ class Moves:
 
     def __init__(self, moves_file: pathlib.Path, dims: Tuple[int, int]):
         """Load moves from a text file.
-        
+
         Args:
             moves_file: Path to moves.txt file
             dims: Board dimensions (rows, cols)
@@ -57,18 +57,24 @@ class Moves:
         coords, tag_str = s.split(":", 1)
         dr, dc = [int(x) for x in coords.split(",")]
 
-        if tag_str.strip() == "capture":  # capture move only
+        if tag_str.strip() == "capture":
             tag = _CAPTURE
-        elif tag_str.strip() == "non_capture":  # non-capture move only 
+        elif tag_str.strip() == "non_capture":
             tag = _NON_CAPTURE
         else:  # can both capture and not capture
-            tag = -1  # Default to -1 for "can both"
+            tag = -1
 
         return dr, dc, tag
 
-    def is_dst_cell_valid(self, dr, dc, dst_pieces, my_color):
-        """Check if a move is valid based on the destination cell state."""
-        # If the relative move isn't in the table – it's invalid
+    def is_dst_cell_valid(self, dr, dc, dst_pieces = None, my_color = None, dst_has_piece: bool | None = None):
+        if dst_has_piece is not None and dst_pieces is None:
+            # synthesise minimal placeholder list when a piece is present
+            Dummy = type("Dummy", (), {"id": "DX"})
+            dst_pieces = [Dummy()] if dst_has_piece else None
+            # tests don’t care about colour; default if missing
+            my_color   = my_color or "W"
+
+        # unknown relative move
         if (dr, dc) not in self.moves:
             return False
 

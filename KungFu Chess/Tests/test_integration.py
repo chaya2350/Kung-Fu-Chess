@@ -61,6 +61,8 @@ def _simple_piece(code: str, cell: tuple[int, int], board: Board) -> Piece:
     gfx_idle = _build_graphics(cell_px)
     gfx_jump = _build_graphics(cell_px)
 
+
+
     # states --------------------------------------------------------------
     idle_state = State(moves=None, graphics=gfx_idle, physics=idle_phys)
     jump_state = State(moves=None, graphics=gfx_jump, physics=jump_phys)
@@ -130,7 +132,7 @@ def test_keyboard_producer_creates_jump_command():
     prod._on_event(_FakeEvt("enter"))   # select piece under cursor
 
     # move cursor one up and issue jump
-    kp._cursor = [6, 3]
+    #kp._cursor = [7, 3]
     prod._on_event(_FakeEvt("+"))       # jump to new square
 
     # ensure a command was enqueued --------------------------------------

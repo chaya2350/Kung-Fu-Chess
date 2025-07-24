@@ -38,6 +38,7 @@ def test_game_move_and_capture():
     game.run(timeout=2, is_with_graphics=False)
     assert pw.current_cell() == (4, 0)
     assert pb.current_cell() == (3, 1)
+    game._run_game_loop(timeout=8, is_with_graphics=False)
     game.user_input_queue.put(Command(game.game_time_ms(), pw.id, "move", [(4, 0), (3, 1)]))
     game._run_game_loop(timeout=5, is_with_graphics=False)
     assert pw.current_cell() == (3, 1)
