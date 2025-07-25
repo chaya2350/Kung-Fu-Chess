@@ -7,7 +7,8 @@
 #include <stdexcept>
 #include <filesystem>
 #include <unordered_set>
-#include "img.hpp"
+#include "img/Img.hpp"
+#include "img/ImgFactory.hpp"
 #include <fstream>
 #include <sstream>
 
@@ -43,9 +44,10 @@ private:
 // Helper to read board.csv and create a full game --------------------------------
 // ---------------------------------------------------------------------------
 inline Game create_game(const std::string& pieces_root,
-                        GraphicsFactory gfx_factory) {
+                        const std::shared_ptr<ImgFactory>& img_factory) {
+    GraphicsFactory gfx_factory(img_factory);
     namespace fs = std::filesystem;
-    fs::path root = fs::path(pieces_root);
+    fs::path root = std::filesystem::absolute(fs::path(pieces_root));
     fs::path board_csv = root / "board.csv";
     std::ifstream in(board_csv);
     if(!in) throw std::runtime_error("Cannot open board.csv");

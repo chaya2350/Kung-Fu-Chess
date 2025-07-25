@@ -20,9 +20,8 @@ SPRITES_DIR = PIECES_ROOT / "BB" / "states" / "idle" / "sprites"
 
 
 def _blank_img(w: int = 8, h: int = 8):
-    img = Img()
-    img.img = np.zeros((h, w, 4), dtype=np.uint8)
-    return img
+    img_path = PIECES_ROOT / "BB" / "states" / "idle" / "sprites" / "1.png"
+    return Img().read(img_path, (w, h), keep_aspect=False)
 
 
 def _board(cells: int = 8):

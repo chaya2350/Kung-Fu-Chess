@@ -17,9 +17,8 @@ PIECES_DIR = ROOT_DIR / "pieces"
 MOVES_FILE = PIECES_DIR / "QW" / "states" / "idle" / "moves.txt"
 
 def _blank_img(w: int = 8, h: int = 8):
-    img = Img()
-    img.img = np.zeros((h, w, 4), dtype=np.uint8)
-    return img
+    img_path = ROOT_DIR / "board.png"
+    return Img().read(img_path, (w, h), keep_aspect=False)
 
 
 def _board(cells: int = 8):

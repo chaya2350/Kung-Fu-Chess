@@ -51,9 +51,8 @@ public class Game {
     /* ---------------- simplified game loop (no graphics) ------------ */
     public void _run_game_loop(int numIterations, boolean withGraphics) {
         int counter = 0;
-        long simNow = game_time_ms();
         while (!_is_win()) {
-            long now = simNow;
+            long now = game_time_ms();
             for (Piece p: new ArrayList<>(pieces)) {
                 p.update(now);
             }
@@ -70,9 +69,6 @@ public class Game {
             if (numIterations > 0 && ++counter >= numIterations) {
                 break;
             }
-
-            // advance simulated time by 500 ms per loop to ensure noticeable physics progression
-            simNow += 500;
         }
     }
 

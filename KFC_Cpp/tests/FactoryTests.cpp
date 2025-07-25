@@ -45,6 +45,7 @@ TEST_CASE("PieceFactory generates unique piece ids and correct location") {
 
 TEST_CASE("create_game builds full board of 32 pieces") {
     GraphicsFactory gf;
-    Game game = create_game("../KungFu Chess/pieces", gf);
+    // the relative path is relative to the exe path , not the code path. 
+    Game game = create_game("../../../../KungFu Chess/pieces", gf);
     CHECK(game.pieces.size() == 32);
 } 

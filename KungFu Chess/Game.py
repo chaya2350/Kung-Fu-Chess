@@ -5,7 +5,7 @@ from collections import defaultdict
 from Board import Board
 from Command import Command
 from Piece import Piece
-from img import Img, close_all_img_windows, draw_rect
+
 
 from KeyboardInput import KeyboardProcessor, KeyboardProducer
 
@@ -119,7 +119,6 @@ class Game:
         self._run_game_loop(num_iterations, is_with_graphics)
 
         self._announce_win()
-        close_all_img_windows()
         if self.kb_prod_1:
             self.kb_prod_1.stop()
             self.kb_prod_2.stop()
@@ -142,7 +141,7 @@ class Game:
                 y2 = y1 + self.board.cell_H_pix - 1;
                 x2 = x1 + self.board.cell_W_pix - 1
                 color = (0, 255, 0) if player == 1 else (255, 0, 0)
-                draw_rect(self.curr_board.img.img, x1, y1, x2, y2, color)
+                self.curr_board.img.draw_rect(x1, y1, x2, y2, color)
 
                 # only print if moved
                 prev = getattr(self, last)

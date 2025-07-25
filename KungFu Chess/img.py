@@ -56,12 +56,12 @@ class Img:
             print(f"[DEBUG] Resized {path} to {self.img.shape}")
 
         return self
-    
+
     def copy(self):
         new_img = Img()
         new_img.img = self.img.copy()
         return new_img
-    
+
     def draw_on(self, other_img, x, y):
         if self.img is None or other_img.img is None:
             raise ValueError("Both images must be loaded before drawing.")
@@ -107,10 +107,5 @@ class Img:
         cv2.imshow("Image", self.img)
         cv2.waitKey(1)
 
-
-def close_all_img_windows():
-    cv2.destroyAllWindows()
-
-
-def draw_rect(img, x1, y1, x2, y2, color):
-    cv2.rectangle(img, (x1, y1), (x2, y2), color, 2)
+    def draw_rect(self, x1, y1, x2, y2, color):
+        cv2.rectangle(self.img, (x1, y1), (x2, y2), color, 2)

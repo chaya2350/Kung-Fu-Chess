@@ -11,9 +11,8 @@ from img import Img, draw_rect, close_all_img_windows
 
 
 def _blank_img(w: int = 10, h: int = 10):
-    img = Img()
-    img.img = np.zeros((h, w, 4), dtype=np.uint8)
-    return img
+    img_path = pathlib.Path(__file__).parent.parent / "board.png"
+    return Img().read(img_path, (w, h), keep_aspect=False)
 
 
 def test_board_cell_conversions():
@@ -28,10 +27,6 @@ def test_board_cell_conversions():
     assert cell == back_cell
     assert pix == (1 * board.cell_W_pix, 2 * board.cell_H_pix)
 
-    # Ensure show() and helper wrappers don’t crash head-less
-    board.show()
-    close_all_img_windows()
-
 
 def test_img_draw_and_rectangle():
     dst = _blank_img(4, 4)
@@ -41,7 +36,7 @@ def test_img_draw_and_rectangle():
     src.draw_on(dst, 1, 1)
 
     # also exercise draw_rect helper – actual drawing is stubbed on headless env
-    draw_rect(dst.img, 0, 0, 3, 3, (255, 0, 0))
+    dst.draw_rect(0, 0, 3, 3, (255, 0, 0))
 
 
 # ---------------------------------------------------------------------------

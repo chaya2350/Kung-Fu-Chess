@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <optional>
+#include "img/ImgFactory.hpp"
 
 namespace nlohmann { class json; }
 
@@ -12,15 +13,20 @@ namespace nlohmann { class json; }
 // factory mirrors the Python API expected by the unit tests.
 class GraphicsFactory {
 public:
-    // The Python version receives an img_loader which is stored and passed to
-    // Graphics objects.  Here we accept any pointer (void*) just to satisfy the
-    // signature – the loader does nothing inside our stubbed Graphics.
-    explicit GraphicsFactory(void* /*img_loader*/ = nullptr) {}
+    explicit GraphicsFactory(std::shared_ptr<ImgFactory> factory_ptr = nullptr)
+        : img_factory(std::move(factory_ptr)) {}
 
     std::shared_ptr<Graphics> load(const std::string& sprites_dir,
-                                   const nlohmann::json& /*cfg*/, // ignored for now
+                                   const nlohmann::json& /*cfg*/, // ignored
                                    std::pair<int,int> cell_size) const {
-        // Simply create Graphics with the provided path and size.
-        return std::make_shared<Graphics>(sprites_dir, cell_size);
+        // For now, create a Graphics object with blank frames produced by img_factory
+        auto gfx = std::make_shared<Graphics>(sprites_dir, cell_size, /*loop*/true, /*fps*/6.0);
+        if(img_factory) {
+            auto blank = img_factory->create_blank(cell_size.first, cell_size.second);
+            gfx->set_frames({*blank}); // will adapt when Graphics updated to shared_ptr
+        }
+        return gfx;
     }
+private:
+    std::shared_ptr<ImgFactory> img_factory;
 }; 

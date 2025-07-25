@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from Board import Board
 from Command import Command
-import cv2
 from typing import Callable, Dict, List, Tuple
 
 
