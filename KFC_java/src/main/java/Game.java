@@ -13,6 +13,10 @@ public class Game {
     public final Map<Moves.Pair, List<Piece>> pos = new HashMap<>();
     public final Map<String, Piece> pieceById = new HashMap<>();
 
+    // --- keyboard helpers -----------------------------------------------------
+    private KeyboardProcessor kp1, kp2;
+    private KeyboardProducer kbProd1, kbProd2;
+
     public Game(List<Piece> pieces, Board board) {
         if (!validate(pieces)) throw new InvalidBoard();
         this.pieces = new ArrayList<>(pieces);
@@ -102,9 +106,59 @@ public class Game {
         }
     }
 
+    /* ---------------- keyboard helpers ---------------- */
+    public void startUserInputThread() {
+        // player 1 key-map
+        Map<String,String> p1Map = Map.of(
+                "up", "up", "down", "down", "left", "left", "right", "right",
+                "enter", "select", "+", "jump"
+        );
+        // player 2 key-map
+        Map<String,String> p2Map = Map.of(
+                "w", "up", "s", "down", "a", "left", "d", "right",
+                "f", "select", "g", "jump"
+        );
+
+        // create two processors
+        kp1 = new KeyboardProcessor(board.getHCells(), board.getWCells(), p1Map);
+        kp2 = new KeyboardProcessor(board.getHCells(), board.getWCells(), p2Map);
+
+        // pass the player number as the 4th argument
+        kbProd1 = new KeyboardProducer(this, userInputQueue, kp1, 1);
+        kbProd2 = new KeyboardProducer(this, userInputQueue, kp2, 2);
+
+        kbProd1.start();
+        kbProd2.start();
+    }
+
+    private void _announce_win() {
+        boolean blackWins = pieces.stream().anyMatch(p -> p.id.startsWith("KB"));
+        String text = blackWins ? "Black wins!" : "White wins!";
+        System.out.println(text);
+    }
+
+    // Accessors for tests
+    public KeyboardProducer getKbProd1() { return kbProd1; }
+    public KeyboardProducer getKbProd2() { return kbProd2; }
+
+    public void stopUserInputThreads() {
+        if (kbProd1 != null) kbProd1.stopProducer();
+        if (kbProd2 != null) kbProd2.stopProducer();
+    }
+
     public void run() {
-        // simple single-frame demo: update map and show board once
-        _update_cell2piece_map();
-        board.show();
+        // Mirror Python's Game.run implementation
+        startUserInputThread();
+        long startMs = game_time_ms();
+        for (Piece p : pieces) {
+            p.reset(startMs);
+        }
+
+        // pass 0 iterations to signify unlimited loop, graphics flag true (ignored currently)
+        _run_game_loop(0, true);
+
+        _announce_win();
+        if (kbProd1 != null) kbProd1.stopProducer();
+        if (kbProd2 != null) kbProd2.stopProducer();
     }
 } 
