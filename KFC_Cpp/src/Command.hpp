@@ -3,9 +3,6 @@
 #include <string>
 #include <vector>
 
-// ---------------------------------------------------------------------------
-// Simple data holder matching Python Command dataclass
-// ---------------------------------------------------------------------------
 struct Command {
     int timestamp;                 // ms since game start
     std::string piece_id;          // identifier of the piece (may be empty)
@@ -13,5 +10,5 @@ struct Command {
     std::vector<std::pair<int,int>> params;  // payload – board cells etc.
 
     Command(int ts, std::string pid, std::string t, std::vector<std::pair<int,int>> p)
-        : timestamp(ts), piece_id(std::move(pid)), type(std::move(t)), params(std::move(p)) {}
+        : timestamp(ts), piece_id(pid), type(t), params(p) {}
 }; 

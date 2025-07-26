@@ -25,7 +25,7 @@ static std::shared_ptr<Graphics> dummy_gfx() {
     return std::make_shared<Graphics>("", std::pair<int,int>{32,32});
 }
 
-static std::shared_ptr<Piece> make_piece(const std::string& id, const std::pair<int,int>& cell, Board& board) {
+static PiecePtr make_piece(const std::string& id, const std::pair<int,int>& cell, Board& board) {
     auto idle_phys = std::make_shared<IdlePhysics>(board);
     auto move_phys = std::make_shared<MovePhysics>(board, 1.0); // 1 cell/s
     auto jump_phys = std::make_shared<JumpPhysics>(board, 0.1); // 100 ms

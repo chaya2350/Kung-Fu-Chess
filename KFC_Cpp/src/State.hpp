@@ -13,7 +13,7 @@ public:
     State(std::shared_ptr<Moves> moves,
           std::shared_ptr<Graphics> graphics,
           std::shared_ptr<BasePhysics> physics)
-        : moves(std::move(moves)), graphics(std::move(graphics)), physics(std::move(physics)) {}
+        : moves(moves), graphics(graphics), physics(physics) {}
 
     std::shared_ptr<Moves>    moves;
     std::shared_ptr<Graphics> graphics;

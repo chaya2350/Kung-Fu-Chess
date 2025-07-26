@@ -3,7 +3,6 @@
 #include "Board.hpp"
 #include "Command.hpp"
 #include "Common.hpp"
-#include <optional>
 #include <cmath>
 
 class BasePhysics {

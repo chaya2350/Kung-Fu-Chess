@@ -38,11 +38,15 @@ set(OPENCV_LIB_DIR "${OPENCV_DIR}/bin")
 # Include directories (apply to both lib & exe)
 target_include_directories(kungfu_chess_lib PRIVATE
     ${OPENCV_INCLUDE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/extern
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/img
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/json
     ${JSON_INCLUDE_DIR})
 target_include_directories(${PROJECT_NAME}   PRIVATE
     ${OPENCV_INCLUDE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/extern)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/img
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/json)
 
 target_link_directories(kungfu_chess_lib PRIVATE ${OPENCV_LIB_DIR})
 target_link_directories(${PROJECT_NAME}   PRIVATE ${OPENCV_LIB_DIR})

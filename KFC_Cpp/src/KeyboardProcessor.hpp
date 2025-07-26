@@ -8,7 +8,7 @@ class KeyboardProcessor {
 public:
     KeyboardProcessor(int rows, int cols,
                       std::unordered_map<std::string,std::string> keymap)
-        : rows(rows), cols(cols), keymap(std::move(keymap)) {
+        : rows(rows), cols(cols), keymap(keymap) {
         cursor[0] = 0; cursor[1] = 0;
     }
 

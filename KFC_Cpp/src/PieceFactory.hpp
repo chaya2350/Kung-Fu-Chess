@@ -16,7 +16,7 @@ public:
                  const GraphicsFactory& gfx_factory)
         : board(board), pieces_root(pieces_root), gfx_factory(gfx_factory) {}
 
-    std::shared_ptr<Piece> create_piece(const std::string& type_name,
+    PiecePtr create_piece(const std::string& type_name,
                                         const std::pair<int,int>& cell) {
         // Generate unique id for this type
         int &counter = id_counters[type_name];

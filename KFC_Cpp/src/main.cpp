@@ -1,19 +1,11 @@
-#include "img.hpp"
 #include <iostream>
+#include "Game.hpp"
+#include "img/OpenCvImg.hpp"
+#include <memory>
 
 int main() {
-    try {
-        std::cout << "Testing Img class..." << std::endl;
-        
-        Img img;
-        img.read(R"(C:\Users\Yehudit\Downloads\code\KT_MoodleUtils\KungFu Chess\sprite_utils\Pieces\WQ.png)", {640, 480}, true);
-        img.put_text("Hello, Img!", 150, 360, 1.0, {0,0,0});
-        img.show();
-        
-        std::cout << "Img class test completed successfully!" << std::endl;
-        return 0;
-    } catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-        return 1;
-    }
+	auto img_factory = std::make_shared<OpenCvImgFactory>();
+	std::string pieces_root = "../../../../KungFu Chess";  // project root containing assets
+	auto game = create_game(pieces_root, img_factory);
+	game.run();
 } 

@@ -9,7 +9,7 @@ Board::Board(int cell_H_pix_,
              int cell_W_pix_,
              int W_cells_,
              int H_cells_,
-             const Img& image,
+             const ImgPtr& image,
              float cell_H_m_,
              float cell_W_m_)
     : cell_H_pix(cell_H_pix_),
@@ -22,17 +22,13 @@ Board::Board(int cell_H_pix_,
 
 // ---------------------------------------------------------------------------
 Board Board::clone() const {
-    Img new_img = img;  // cv::Mat uses reference counting – shallow copy OK
-    // If deep-copy is required uncomment: new_img = Img(img); but fine for now.
+    ImgPtr new_img = img->clone();
     return Board(cell_H_pix, cell_W_pix, W_cells, H_cells, new_img, cell_H_m, cell_W_m);
 }
 
 // ---------------------------------------------------------------------------
 void Board::show() const {
-    if (img.is_loaded()) {
-        const_cast<Img&>(img).show();
-    }
-    // else: intentionally no-op – mirrors Python headless behaviour
+    img->show();
 }
 
 // ---------------------------------------------------------------------------
