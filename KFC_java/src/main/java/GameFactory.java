@@ -10,10 +10,10 @@ public class GameFactory {
     public static Game createGame(Path piecesRoot) {
         // Build an 8x8 board with blank background
         int cellPx = 32;
-        Img bg = new Img();
+        Img bg = new BuffImg();
         try {
             java.awt.image.BufferedImage blank = new java.awt.image.BufferedImage(cellPx*8, cellPx*8, java.awt.image.BufferedImage.TYPE_INT_ARGB);
-            java.lang.reflect.Field f = Img.class.getDeclaredField("img");
+            java.lang.reflect.Field f = BuffImg.class.getDeclaredField("img");
             f.setAccessible(true);
             f.set(bg, blank);
         } catch (Exception e) { throw new RuntimeException(e); }

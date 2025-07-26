@@ -16,7 +16,7 @@ public class GraphicsTests {
             // replace frames with dummy placeholders for deterministic tests
             gfx.getFrames().clear();
             for (int i=0;i<numDummyFrames;i++) {
-                gfx.getFrames().add(new Img());
+                gfx.getFrames().add(new MockImg());
             }
             return gfx;
         } catch (Exception e) { throw new RuntimeException(e); }

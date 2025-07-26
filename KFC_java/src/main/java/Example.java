@@ -7,8 +7,8 @@ public class Example {
         String bg   = "../board.png";   // put any image path here
         String logo = "../pieces/QW/states/jump/sprites/2.png";         // PNG with transparency
 
-        Img canvas = new Img().read(bg);                                          // keep full size
-        Img badge  = new Img().read(logo,
+        Img canvas = new BuffImg().read(bg);                                          // keep full size
+        Img badge  = new BuffImg().read(logo,
                                     new Dimension(200, 200), true, null);        // shrink
 
         badge.putText("Demo", 10, 30, 1.2f,

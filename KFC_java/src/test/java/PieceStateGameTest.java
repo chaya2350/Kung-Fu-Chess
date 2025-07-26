@@ -1,7 +1,5 @@
 import org.junit.jupiter.api.Test;
 import java.awt.Dimension;
-import java.awt.image.BufferedImage;
-import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -9,13 +7,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class PieceStateGameTest {
     /* helpers */
     private static Img blankImg(int w, int h) {
-        Img img = new Img();
-        try {
-            Field f = Img.class.getDeclaredField("img");
-            f.setAccessible(true);
-            f.set(img, new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB));
-        } catch (Exception e) { throw new RuntimeException(e); }
-        return img;
+        return new MockImg(w, h);
     }
     private static Board board(int cells) {
         int cellPx = 32;

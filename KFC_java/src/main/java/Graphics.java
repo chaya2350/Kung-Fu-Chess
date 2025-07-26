@@ -20,7 +20,7 @@ public class Graphics {
         try (java.util.stream.Stream<java.nio.file.Path> paths = java.nio.file.Files.list(spritesFolder)) {
             paths.filter(p -> p.toString().endsWith(".png"))
                  .sorted()
-                 .forEach(p -> frames.add(new Img().read(p.toString(), cellSize, true, null)));
+                 .forEach(p -> frames.add(new BuffImg().read(p.toString(), cellSize, true, null)));
         } catch (java.io.IOException e) {
             throw new RuntimeException("Failed listing sprites folder: " + spritesFolder, e);
         }

@@ -5,7 +5,7 @@ public class BoardFactory {
         try {
             BufferedImage img = ImageIO.read(boardImgPath.toFile());
             int cell = img.getWidth()/8; // assume 8x8
-            Img bg = new Img().read(boardImgPath.toString());
+            Img bg = new BuffImg().read(boardImgPath.toString());
             return new Board(cell, cell, 8,8, bg);
         } catch(Exception e){ throw new RuntimeException(e); }
     }

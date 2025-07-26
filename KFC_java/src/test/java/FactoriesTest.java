@@ -7,13 +7,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class FactoriesTest {
     private static Board board() {
         int cell = 32;
-        Img bg = new Img();
-        try {
-            java.awt.image.BufferedImage blank = new java.awt.image.BufferedImage(cell*8, cell*8, java.awt.image.BufferedImage.TYPE_INT_ARGB);
-            java.lang.reflect.Field f = Img.class.getDeclaredField("img");
-            f.setAccessible(true);
-            f.set(bg, blank);
-        } catch (Exception e) { throw new RuntimeException(e); }
+        Img bg = new MockImg(cell*8, cell*8);
         return new Board(cell, cell, 8,8, bg);
     }
 

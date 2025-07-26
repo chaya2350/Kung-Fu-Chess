@@ -30,21 +30,18 @@ public class Board {
     /* ------------ convenience ------------- */
 
     public Board cloneBoard() {
-        Img newImg = new Img();
+        Img newImg;
         if (img != null && img.get() != null) {
-            // deep copy via BufferedImage copy
             java.awt.image.BufferedImage copy = new java.awt.image.BufferedImage(
                     img.get().getColorModel(),
                     img.get().copyData(null),
                     img.get().isAlphaPremultiplied(),
                     null);
-            newImg = new Img();
-            // direct access to internal img field isn't available, so we use reflection as last resort
-            try {
-                java.lang.reflect.Field f = Img.class.getDeclaredField("img");
-                f.setAccessible(true);
-                f.set(newImg, copy);
-            } catch (Exception ignored) {}
+            BuffImg bi = new BuffImg();
+            bi.setBufferedImage(copy);
+            newImg = bi;
+        } else {
+            newImg = new BuffImg();
         }
         return new Board(cellHPix, cellWPix, wCells, hCells, newImg, cellHM, cellWM);
     }
