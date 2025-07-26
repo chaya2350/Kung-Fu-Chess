@@ -4,11 +4,12 @@
 #include "../src/PieceFactory.hpp"
 #include "../src/GraphicsFactory.hpp"
 #include "../src/Game.hpp"
-#include "../src/img.hpp"
+#include "../src/img/MockImg.hpp"
 #include <unordered_set>
+using namespace std;
 
 TEST_CASE("PhysicsFactory creates correct subclasses") {
-    Board board(32,32,8,8, Img());
+    Board board(32,32,8,8, make_shared<MockImg>());
     PhysicsFactory pf(board);
 
     auto idle = pf.create({0,0}, "idle", {});
@@ -31,7 +32,7 @@ TEST_CASE("PhysicsFactory creates correct subclasses") {
 }
 
 TEST_CASE("PieceFactory generates unique piece ids and correct location") {
-    Board board(32,32,8,8, Img());
+    Board board(32,32,8,8, make_shared<MockImg>());
     GraphicsFactory gf;
     PieceFactory pf(board, "../pieces", gf);
 
@@ -44,7 +45,7 @@ TEST_CASE("PieceFactory generates unique piece ids and correct location") {
 }
 
 TEST_CASE("create_game builds full board of 32 pieces") {
-    GraphicsFactory gf;
+    auto gf = std::make_shared<MockImgFactory>();
     // the relative path is relative to the exe path , not the code path. 
     Game game = create_game("../../../../KungFu Chess/pieces", gf);
     CHECK(game.pieces.size() == 32);

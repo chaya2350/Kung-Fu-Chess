@@ -25,7 +25,7 @@ Graphics::Graphics(const std::string& sprites_folder,
             std::sort(pngs.begin(), pngs.end());
             for(const auto& p : pngs) {
                 auto img_ptr = img_factory->load(p.string(), cell_size);
-                if(img_ptr) frames.push_back(*img_ptr); // copy into value vector
+                if(img_ptr) frames.push_back(img_ptr); // copy into value vector
             }
         }
     }
@@ -45,7 +45,7 @@ void Graphics::update(int now_ms) {
 		cur_frame = std::min<size_t>(frames_passed, frames.size() - 1);
 }
 
-const Img& Graphics::get_img() const {
+const ImgPtr Graphics::get_img() const {
 	if (frames.empty()) throw std::runtime_error("Graphics has no frames loaded");
 	return frames[cur_frame];
 }

@@ -4,6 +4,7 @@
 #include "Command.hpp"
 #include "Common.hpp"
 #include <cmath>
+#include <memory>
 
 class BasePhysics {
 public:
@@ -13,9 +14,10 @@ public:
     virtual ~BasePhysics() = default;
 
     virtual void reset(const Command& cmd) = 0;
-    virtual std::optional<Command> update(int now_ms) = 0;
+    // Update physics state. Return a Command if one is produced, otherwise nullptr
+    virtual std::shared_ptr<Command> update(int now_ms) = 0;
 
-    std::pair<float,float> get_pos_m() const { return curr_pos_m; }
+    std::pair<double,double> get_pos_m() const { return curr_pos_m; }
     std::pair<int,int> get_pos_pix() const { return board.m_to_pix(curr_pos_m); }
     std::pair<int,int> get_curr_cell() const { return board.m_to_cell(curr_pos_m); }
 
@@ -31,7 +33,7 @@ protected:
 
     std::pair<int,int> start_cell;
     std::pair<int,int> end_cell;
-    std::pair<float,float> curr_pos_m{0,0};
+    std::pair<double,double> curr_pos_m{0.f,0.f};
     int start_ms{0};
 };
 
@@ -52,7 +54,7 @@ public:
         curr_pos_m = board.cell_to_m(start_cell);
         start_ms = cmd.timestamp;
     }
-    std::optional<Command> update(int) override { return std::nullopt; }
+    std::shared_ptr<Command> update(int) override { return nullptr; }
 
     bool can_capture() const override { return false; }
     bool is_movement_blocker() const override { return true; }
@@ -70,28 +72,28 @@ public:
         curr_pos_m = board.cell_to_m(start_cell);
         start_ms   = cmd.timestamp;
 
-        std::pair<float,float> start_pos = board.cell_to_m(start_cell);
-        std::pair<float,float> end_pos   = board.cell_to_m(end_cell);
+        std::pair<double,double> start_pos = board.cell_to_m(start_cell);
+        std::pair<double,double> end_pos   = board.cell_to_m(end_cell);
         movement_vec = { end_pos.first - start_pos.first, end_pos.second - start_pos.second };
         movement_len = std::hypot(movement_vec.first, movement_vec.second);
         double speed_m_s = param; // 1 cell == 1m with default cell_size_m
         duration_s = movement_len / speed_m_s;
     }
 
-    std::optional<Command> update(int now_ms) override {
+    std::shared_ptr<Command> update(int now_ms) override {
         double seconds = (now_ms - start_ms) / 1000.0;
         if(seconds >= duration_s) {
             curr_pos_m = board.cell_to_m(end_cell);
-            return std::optional<Command>{Command{now_ms, "", "done", {}}};
+            return std::make_shared<Command>(Command{now_ms, "", "done", {}});
         }
         double ratio = seconds / duration_s;
         curr_pos_m = { board.cell_to_m(start_cell).first + movement_vec.first * ratio,
                        board.cell_to_m(start_cell).second + movement_vec.second * ratio };
-        return std::nullopt;
+        return nullptr;
     }
 
 private:
-    std::pair<float,float> movement_vec{0,0};
+    std::pair<double,double> movement_vec{0.f,0.f};
     double movement_len{0};
     double duration_s{1.0};
 public:
@@ -111,12 +113,12 @@ public:
         start_ms   = cmd.timestamp;
     }
 
-    std::optional<Command> update(int now_ms) override {
+    std::shared_ptr<Command> update(int now_ms) override {
         double seconds = (now_ms - start_ms) / 1000.0;
         if(seconds >= param) {
-            return std::optional<Command>{Command{now_ms, "", "done", {}}};
+            return std::make_shared<Command>(Command{now_ms, "", "done", {}});
         }
-        return std::nullopt;
+        return nullptr;
     }
 
     bool is_movement_blocker() const override { return true; }

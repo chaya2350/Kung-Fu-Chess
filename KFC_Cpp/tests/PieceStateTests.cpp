@@ -6,35 +6,35 @@
 #include "../src/Piece.hpp"
 #include "../src/Moves.hpp"
 #include "../src/Graphics.hpp"
-#include "../src/img.hpp"
+#include "../src/img/MockImg.hpp"
 
 #include <memory>
 #include <unordered_map>
 #include <vector>
 #include <filesystem>
+using namespace std;
 
 // ---------------------------------------------------------------------------
 // Helpers (mirror ones already used in PhysicsStateTests)
 // ---------------------------------------------------------------------------
 static Board make_board(int cells=8, int px=32) {
-    Img blank; // default blank image
-    return Board(px, px, cells, cells, blank);
+    return Board(px, px, cells, cells, make_shared<MockImg>());
 }
 
-static std::shared_ptr<Graphics> dummy_gfx() {
-    return std::make_shared<Graphics>("", std::pair<int,int>{32,32});
+static shared_ptr<Graphics> dummy_gfx() {
+    return shared_ptr<Graphics>(new Graphics("", {32,32}, make_shared<MockImgFactory>()));
 }
 
-static PiecePtr make_piece(const std::string& id, const std::pair<int,int>& cell, Board& board) {
-    auto idle_phys = std::make_shared<IdlePhysics>(board);
-    auto move_phys = std::make_shared<MovePhysics>(board, 1.0); // 1 cell/s
-    auto jump_phys = std::make_shared<JumpPhysics>(board, 0.1); // 100 ms
+static PiecePtr make_piece(const string& id, const pair<int,int>& cell, Board& board) {
+    auto idle_phys = make_shared<IdlePhysics>(board);
+    auto move_phys = make_shared<MovePhysics>(board, 1.0); // 1 cell/s
+    auto jump_phys = make_shared<JumpPhysics>(board, 0.1); // 100 ms
 
     auto gfx = dummy_gfx();
 
-    auto idle = std::make_shared<State>(nullptr, gfx, idle_phys);
-    auto move = std::make_shared<State>(nullptr, gfx, move_phys);
-    auto jump = std::make_shared<State>(nullptr, gfx, jump_phys);
+    auto idle = make_shared<State>(nullptr, gfx, idle_phys);
+    auto move = make_shared<State>(nullptr, gfx, move_phys);
+    auto jump = make_shared<State>(nullptr, gfx, jump_phys);
 
     idle->name = "idle";
     move->name = "move";
@@ -45,7 +45,7 @@ static PiecePtr make_piece(const std::string& id, const std::pair<int,int>& cell
     move->set_transition("done", idle);
     jump->set_transition("done", idle);
 
-    auto piece = std::make_shared<Piece>(id, idle);
+    auto piece = make_shared<Piece>(id, idle);
 
     // initialise physics position directly via reset
     idle->reset(Command{0, piece->id, "idle", {cell}});
@@ -62,7 +62,7 @@ TEST_CASE("Piece state transitions via commands") {
     auto piece = make_piece("QW", {4,4}, board);
 
     CHECK(piece->state->name == "idle");
-    CHECK(piece->current_cell() == std::pair<int,int>{4,4});
+    CHECK(piece->current_cell() == pair<int,int>{4,4});
 
     // Move command
     Piece::Cell2Pieces map;

@@ -6,6 +6,10 @@
 #include <unordered_map>
 #include <vector>
 #include "Common.hpp"
+#include "Piece.hpp"
+
+class Piece;
+typedef std::shared_ptr<Piece> PiecePtr;
 
 class Piece {
 public:
@@ -34,4 +38,3 @@ public:
 
     Cell current_cell() const { return state->physics->get_curr_cell(); }
 };
-typedef std::shared_ptr<Piece> PiecePtr;

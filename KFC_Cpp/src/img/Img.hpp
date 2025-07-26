@@ -19,7 +19,7 @@ public:
     virtual void draw_on(Img& /*dst*/, int /*x*/, int /*y*/) {}
     virtual void put_text(const std::string& /*txt*/, int /*x*/, int /*y*/, double /*font_size*/) {}
     virtual void show() const {}
-    virtual ImgPtr clone() const { return std::make_shared<Img>(*this); }
+    virtual ImgPtr clone() const = 0;
 
     virtual void draw_rect(int x, int y, int width, int height, const std::vector<uint8_t> & color) = 0;
 };

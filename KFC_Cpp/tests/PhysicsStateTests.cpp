@@ -5,21 +5,24 @@
 #include "../src/Piece.hpp"
 #include "../src/Board.hpp"
 #include "../src/Graphics.hpp"
-#include "../src/img.hpp"
+#include "../src/img/MockImg.hpp"
 
 #include <vector>
 #include <cmath>
+#include <memory>
+
+using namespace std;
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 static Board make_board(int cells=8, int px=1) {
-    Img blank; // no real image – headless
-    return Board(px, px, cells, cells, blank);
+    return Board(px, px, cells, cells, make_shared<MockImg>());
 }
 
-static std::shared_ptr<Graphics> dummy_gfx() {
-    return std::make_shared<Graphics>("", std::pair<int,int>{1,1});
+static shared_ptr<Graphics> dummy_gfx() {
+    
+    return shared_ptr<Graphics>(new Graphics("", { 1,1 }, make_shared<MockImgFactory>()));
 }
 
 // ---------------------------------------------------------------------------
@@ -31,13 +34,13 @@ TEST_CASE("MovePhysics full cycle") {
     phys.reset(cmd);
 
     // halfway (1 s) – still moving
-    CHECK(phys.update(1000) == std::nullopt);
+    CHECK(phys.update(1000).get() == nullptr);
 
     // Slightly beyond expected duration (2.1s) – should emit done
     auto done = phys.update(2100);
-    REQUIRE(done);
+    CHECK(done.get());
     CHECK(done->type == "done");
-    CHECK(phys.get_curr_cell() == std::pair<int,int>{0,2});
+    CHECK(phys.get_curr_cell() == pair<int,int>{0,2});
 }
 
 TEST_CASE("JumpPhysics & RestPhysics duration") {
@@ -46,12 +49,14 @@ TEST_CASE("JumpPhysics & RestPhysics duration") {
     JumpPhysics jump(board, 0.05); // 50 ms
     Command start(0, "J", "jump", {{1,1}});
     jump.reset(start);
-    CHECK(jump.update(20) == std::nullopt);
+
+    CHECK_EQ(jump.update(20), nullptr);
     CHECK(jump.update(100)->type == "done");
 
     RestPhysics rest(board, 0.05);
     rest.reset(start);
-    CHECK(rest.update(20) == std::nullopt);
+
+    CHECK(rest.update(20) == nullptr);
     CHECK(rest.update(100)->type == "done");
 }
 
@@ -62,13 +67,13 @@ TEST_CASE("State transition idle→move→idle via internal done") {
     auto gfx = dummy_gfx();
 
     // Physics per state
-    auto idle_phys = std::make_shared<IdlePhysics>(board);
-    auto move_phys = std::make_shared<MovePhysics>(board, 1.0);
+    auto idle_phys = make_shared<IdlePhysics>(board);
+    auto move_phys = make_shared<MovePhysics>(board, 1.0);
 
     // States
-    auto idle = std::make_shared<State>(nullptr, gfx, idle_phys);
+    auto idle = make_shared<State>(nullptr, gfx, idle_phys);
     idle->name = "idle";
-    auto move = std::make_shared<State>(nullptr, gfx, move_phys);
+    auto move = make_shared<State>(nullptr, gfx, move_phys);
     move->name = "move";
 
     idle->set_transition("move", move);
@@ -92,8 +97,8 @@ TEST_CASE("IdlePhysics properties") {
     Command cmd(0, "P", "idle", {{2,3}});
     phys.reset(cmd);
 
-    CHECK(phys.get_curr_cell() == std::pair<int,int>{2,3});
-    CHECK(phys.update(100) == std::nullopt);
+    CHECK(phys.get_curr_cell() == pair<int,int>{2,3});
+    CHECK(phys.update(100) == nullptr);
     CHECK(!phys.can_capture());
     CHECK(phys.is_movement_blocker());
 }

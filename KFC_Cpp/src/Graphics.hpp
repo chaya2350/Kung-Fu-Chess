@@ -15,14 +15,14 @@ public:
 
 	void reset(const Command& cmd);
 	void update(int now_ms);
-	const Img& get_img() const;
+	const ImgPtr get_img() const;
 
 	// Test helpers ---------------------------------------------------------
 	size_t current_frame() const { return cur_frame; }
-	void set_frames(const std::vector<Img>& new_frames) { frames = new_frames; }
+	void set_frames(const std::vector<ImgPtr>& new_frames) { frames = new_frames; }
 
 private:
-	std::vector<Img> frames;
+	std::vector<ImgPtr> frames;
 	bool loop{ true };
 	double fps{ 6.0 };
 	int start_ms{ 0 };

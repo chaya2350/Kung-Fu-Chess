@@ -1,9 +1,11 @@
 #include <doctest/doctest.h>
+#include <memory>
 
 #include "../src/Board.hpp"
+#include "../src/img/MockImg.hpp"
 
 TEST_CASE("Board cell conversions roundtrip") {
-    Img blankImg; // empty image – not loaded
+    ImgPtr blankImg = std::make_shared<MockImg>(); // empty image – not loaded
 
     Board board(/*cell_H_pix*/2,
                 /*cell_W_pix*/2,
