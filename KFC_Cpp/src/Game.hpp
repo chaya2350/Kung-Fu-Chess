@@ -161,7 +161,6 @@ inline void Game::resolve_collisions() {
 
 inline void Game::announce_win() const {
     bool black_alive = std::any_of(pieces.begin(), pieces.end(), [](const PiecePtr & p){return p->id.rfind("KB",0)==0;});
-    std::cout << (black_alive? "Black wins!" : "White wins!") << std::endl;
 }
 
 inline bool Game::is_win() const {
