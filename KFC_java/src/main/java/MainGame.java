@@ -2,7 +2,7 @@ import java.nio.file.Path;import java.util.*;
 
 public class MainGame {
     public static void main(String[] args) throws Exception {
-        Board board = BoardFactory.loadDefault(Path.of("../board.png"));
+        Board board = BoardFactory.loadDefault(Path.of("../pieces/board.png"));
         PieceFactory pf = new PieceFactory(board);
         pf.generateLibrary(Path.of("../pieces"));
         List<Piece> pieces = new ArrayList<>();

@@ -4,7 +4,7 @@ import java.awt.*;
 public class Example {
     public static void main(String[] args) throws Exception {
 
-        String bg   = "../board.png";   // put any image path here
+        String bg   = "../pieces/board.png";   // put any image path here
         String logo = "../pieces/QW/states/jump/sprites/2.png";         // PNG with transparency
 
         Img canvas = new BuffImg().read(bg);                                          // keep full size
