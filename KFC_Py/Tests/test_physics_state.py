@@ -11,7 +11,7 @@ from Piece import Piece
 from Graphics import Graphics
 from GraphicsFactory import MockImgFactory
 
-PIECES_ROOT = pathlib.Path(__file__).parent.parent / "pieces"
+PIECES_ROOT = pathlib.Path(__file__).parent.parent.parent / "pieces"
 SPRITES_DIR = PIECES_ROOT / "BB" / "states" / "idle" / "sprites"
 
 # ---------------------------------------------------------------------------

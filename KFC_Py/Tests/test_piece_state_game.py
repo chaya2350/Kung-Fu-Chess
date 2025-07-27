@@ -17,7 +17,7 @@ PIECES_DIR = ROOT_DIR / "pieces"
 MOVES_FILE = PIECES_DIR / "QW" / "states" / "idle" / "moves.txt"
 
 def _blank_img(w: int = 8, h: int = 8):
-    img_path = ROOT_DIR / "board.png"
+    img_path = ROOT_DIR / "pieces/board.png"
     return Img().read(img_path, (w, h), keep_aspect=False)
 
 
@@ -27,7 +27,7 @@ def _board(cells: int = 8):
 
 
 def _graphics():
-    sprites_dir = pathlib.Path(__file__).parent.parent / "pieces" / "BB" / "states" / "idle" / "sprites"
+    sprites_dir = pathlib.Path(__file__).parent.parent.parent / "pieces" / "BB" / "states" / "idle" / "sprites"
     return Graphics(sprites_folder=sprites_dir, cell_size=(32, 32),
                     loop=False, fps=1.0,
                     img_loader=MockImgFactory())

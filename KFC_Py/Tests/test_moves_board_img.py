@@ -11,7 +11,7 @@ from img import Img
 
 
 def _blank_img(w: int = 10, h: int = 10):
-    img_path = pathlib.Path(__file__).parent.parent / "board.png"
+    img_path = pathlib.Path(__file__).parent.parent.parent / "pieces/board.png"
     return Img().read(img_path, (w, h), keep_aspect=False)
 
 
