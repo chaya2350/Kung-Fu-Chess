@@ -4,8 +4,8 @@
 #include <memory>
 #include <string>
 #include "img/ImgFactory.hpp"
+#include "nlohmann/json_fwd.hpp"
 
-namespace nlohmann { class json; }
 
 // Simple GraphicsFactory that forwards an image loader placeholder to
 // Graphics.  In this head-less C++ port, the img_loader is unused but the

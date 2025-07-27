@@ -27,11 +27,20 @@ Moves::Moves(const std::string& txt_path, std::pair<int,int> board_dims)
 // ---------------------------------------------------------------------------
 Moves::RelMove Moves::parse_line(const std::string& s) {
     auto pos = s.find(':');
-    if(pos == std::string::npos) {
-        throw std::runtime_error("Unsupported move syntax – ':' required: " + s);
-    }
     std::string coords = s.substr(0, pos);
-    std::string tag_str = s.substr(pos+1);
+    std::string tag_str = s.substr(pos + 1);
+
+    if(pos == std::string::npos) {
+        coords = s;
+        tag_str = "";
+    }
+    else
+    {
+        coords = s.substr(0, pos);
+        tag_str = s.substr(pos + 1);
+    }
+    
+    
 
     int dr, dc;
     char comma;
