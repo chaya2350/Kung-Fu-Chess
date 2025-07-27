@@ -200,7 +200,7 @@ inline Game create_game(const std::string& pieces_root,
     std::ifstream in(board_csv);
     if(!in) throw std::runtime_error("Cannot open board.csv");
 
-    fs::path board_png = root / "pieces" / "board.png";
+    fs::path board_png = root / "board.png";
     auto board_img = img_factory->load(board_png.string());
     Board board(32,32,8,8, board_img);
 

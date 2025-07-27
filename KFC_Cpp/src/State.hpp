@@ -49,6 +49,7 @@ public:
         if(internal) {
             return on_command(*internal);
         }
+        graphics->update(now_ms); // keep graphics in sync when no state change
         return shared_from_this();
     }
 
