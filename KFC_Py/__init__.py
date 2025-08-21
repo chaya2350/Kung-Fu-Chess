@@ -1,3 +1,0 @@
-"""
-KungFu Chess package.
-""" 

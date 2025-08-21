@@ -1,15 +1,76 @@
-**/.idea
-**/.coverage
-**/__pycache__
-/.venv
-**/htmlcov
-**/.pytest_cache
-/KFC_java/target
-**.egg-info
-**/.vs
-KFC_Cpp/out
-KFC_Cpp/OpenCV_451
-KFC_Cpp/build
-KFC_AnimationUtils/videos
-KFC_AnimationUtils/frames
-KFC_AnimationUtils/sprites
+# Build directories
+build/
+out/
+bin/
+lib/
+
+# IDE files
+.vs/
+.vscode/
+.idea/
+*.vcxproj*
+*.sln
+*.suo
+*.user
+
+# Compiled files
+*.exe
+*.dll
+*.lib
+*.obj
+*.o
+*.a
+*.so
+*.dylib
+
+# CMake files
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+Testing/
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps
+
+# OpenCV binaries (keep source)
+my_cpp/openCV_451/bin/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.bak
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Python (if any)
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Java (if any)
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# Other
+*.swp
+*.swo
+.env
+.env.local
