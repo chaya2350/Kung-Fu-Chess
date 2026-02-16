@@ -875,7 +875,9 @@ void Game::run(int num_iterations, bool is_with_graphics) {
     for (auto &p : pieces)
       p->reset(START_NS);
     _run_game_loop(num_iterations, is_with_graphics);
-    _announce_win();
+    if (_is_win()) {
+      _announce_win();
+    }
     if (kb_prod_1) kb_prod_1->stop();
     if (kb_prod_2) kb_prod_2->stop();
   } catch (const std::exception &ex) {
