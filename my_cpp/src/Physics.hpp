@@ -142,8 +142,10 @@ public:
             std::cout << "[ERROR] MovePhysics::update: vector too small! _curr_pos_m.size()=" << _curr_pos_m.size() << ", _movement_vector.size()=" << _movement_vector.size() << std::endl;
             return nullptr;
         }
-        _curr_pos_m[0] += _movement_vector[0] * seconds_passed * _speed_m_s;
-        _curr_pos_m[1] += _movement_vector[1] * seconds_passed * _speed_m_s;
+        // Calculate position based on distance traveled from start, not incremental addition
+        float distance_traveled = std::min(seconds_passed * _speed_m_s, _movement_vector_length);
+        _curr_pos_m[0] = static_cast<float>(_start_cell[0]) + _movement_vector[0] * distance_traveled;
+        _curr_pos_m[1] = static_cast<float>(_start_cell[1]) + _movement_vector[1] * distance_traveled;
         if (seconds_passed >= _duration_s) {
             sound.stop();
             return std::make_unique<Command>(now_ms, "", "done", std::vector<std::any>{});
